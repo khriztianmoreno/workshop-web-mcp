@@ -1,0 +1,43 @@
+{
+  "name": "workshop-web-mcp",
+  "private": true,
+  "version": "1.0.0",
+  "description": "DevFest Bogotá 2026 workshop: give a web store eyes and hands with WebMCP.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n web,proxy -c cyan,magenta \"npm:dev:web\" \"npm:dev:server\"",
+    "dev:web": "vite",
+    "dev:server": "tsx watch server/index.ts",
+    "server": "tsx server/index.ts",
+    "server:mock": "tsx server/index.ts --mock",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
+    "check": "node scripts/check-env.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^3.4.0",
+    "@hono/node-server": "^2.1.9",
+    "dotenv": "^18.0.10",
+    "hono": "^4.13.19",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "concurrently": "^10.0.7",
+    "jsdom": "^31.0.1",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}
