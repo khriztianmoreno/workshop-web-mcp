@@ -1,8 +1,23 @@
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { PolyfillModelContext } from '../polyfill';
+import { getStoreInfoTool } from './get-store-info';
+import { storeTools } from './index';
+import { run } from './test-utils';
 
-// TODO(acto-1): these tests arrive with the solution. To check your work early:
-//   git checkout acto-2 -- src/webmcp/tools/acto-1.test.ts && npm test
 describe('Act 1 · first tool', () => {
-  it.todo('get_store_info is read-only and returns hours and shipping');
-  it.todo('every registered store tool has a unique, valid name');
+  it('get_store_info is read-only and returns hours and shipping', async () => {
+    expect(getStoreInfoTool.name).toBe('get_store_info');
+    expect(getStoreInfoTool.annotations?.readOnlyHint).toBe(true);
+    const info = await run(getStoreInfoTool, {});
+    expect(info.openingHours).toMatch(/Lunes a sábado/);
+    expect(info.shipping).toHaveLength(2);
+  });
+
+  it('every registered store tool has a unique, valid name', async () => {
+    const mc = new PolyfillModelContext();
+    for (const tool of storeTools) await mc.registerTool(tool);
+    const names = (await mc.getTools()).map((tool) => tool.name);
+    expect(names).toContain('get_store_info');
+    expect(new Set(names).size).toBe(names.length);
+  });
 });
