@@ -1,14 +1,15 @@
+import { openCart } from '../../store/actions';
+import { getCartSummary } from '../../store/selectors';
+import { getState } from '../../store/store';
 import { defineTool } from '../types';
 
-/**
- * TODO(acto-3): implement the open_cart tool.
- *   call openCart() and return { ok: true, cart: getCartSummary(getState()) }.
- * Guide: docs/03-acto-3-manos.md
- */
 export const openCartTool = defineTool<Record<string, never>>({
   name: 'open_cart',
-  description: 'TODO(acto-3): describe this tool for the model.',
+  title: 'Abrir carrito',
+  description: 'Opens the cart drawer so the user can review it. Returns the cart summary.',
+  inputSchema: { type: 'object', properties: {} },
   async execute() {
-    throw new Error('TODO(acto-3): implement open_cart');
+    openCart();
+    return { ok: true, cart: getCartSummary(getState()) };
   },
 });

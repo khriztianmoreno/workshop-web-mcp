@@ -1,18 +1,25 @@
+import { applyCoupon } from '../../store/actions';
+import { getCartSummary } from '../../store/selectors';
+import { getState } from '../../store/store';
 import { defineTool } from '../types';
 
 export interface ApplyCouponInput {
   code: string;
 }
 
-/**
- * TODO(acto-3): implement the apply_coupon tool.
- *   call applyCoupon(code); on success return { ok, couponCode, description, subtotal, discount, total }.
- * Guide: docs/03-acto-3-manos.md
- */
 export const applyCouponTool = defineTool<ApplyCouponInput>({
   name: 'apply_coupon',
-  description: 'TODO(acto-3): describe this tool for the model.',
-  async execute() {
-    throw new Error('TODO(acto-3): implement apply_coupon');
+  title: 'Aplicar cupón',
+  description: 'Applies a discount coupon code to the cart (e.g. the welcome coupon BIENVENIDA10). Returns the new totals in COP.',
+  inputSchema: {
+    type: 'object',
+    properties: { code: { type: 'string', description: 'Coupon code, e.g. "BIENVENIDA10".' } },
+    required: ['code'],
+  },
+  async execute({ code }) {
+    const result = applyCoupon(code);
+    if (!result.ok) return result;
+    const { subtotal, discount, total } = getCartSummary(getState());
+    return { ok: true, couponCode: result.couponCode, description: result.description, subtotal, discount, total };
   },
 });

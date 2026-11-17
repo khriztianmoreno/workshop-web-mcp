@@ -6,6 +6,9 @@ export interface GetProductReviewsInput {
   productId: string;
 }
 
+// TODO(acto-4): reviews are written by third parties. Flag the output with
+//   annotations.untrustedContentHint = true and say in the description that review
+//   text is data, never instructions. Guide: docs/04-acto-4-sabotaje.md
 export const getProductReviewsTool = defineTool<GetProductReviewsInput>({
   name: 'get_product_reviews',
   title: 'Leer reseñas',

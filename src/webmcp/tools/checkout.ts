@@ -1,14 +1,17 @@
+import { checkout } from '../../store/actions';
 import { defineTool } from '../types';
 
-/**
- * TODO(acto-3): implement the checkout tool.
- *   quick version: call checkout() from src/store/actions.ts and return its result.
- * Guide: docs/03-acto-3-manos.md
- */
+// TODO(acto-4): this quick version places the order immediately, no questions asked.
+//   1. annotations: { consequentialHint: true }
+//   2. ask the human with requestConfirmation({...}, signal) from src/ui/confirmation.ts
+//      and return { ok: false, code: 'USER_DECLINED' } if they decline.
+//   Guide: docs/04-acto-4-sabotaje.md
 export const checkoutTool = defineTool<Record<string, never>>({
   name: 'checkout',
-  description: 'TODO(acto-3): describe this tool for the model.',
+  title: 'Finalizar compra',
+  description: 'Places the order with the current cart.',
+  inputSchema: { type: 'object', properties: {} },
   async execute() {
-    throw new Error('TODO(acto-3): implement checkout');
+    return checkout();
   },
 });
