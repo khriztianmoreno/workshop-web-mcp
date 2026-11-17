@@ -1,14 +1,14 @@
+import { getCartSummary } from '../../store/selectors';
+import { getState } from '../../store/store';
 import { defineTool } from '../types';
 
-/**
- * TODO(acto-2): implement the get_cart tool.
- *   readOnlyHint. Return getCartSummary(getState()).
- * Guide: docs/02-acto-2-ojos.md
- */
 export const getCartTool = defineTool<Record<string, never>>({
   name: 'get_cart',
-  description: 'TODO(acto-2): describe this tool for the model.',
+  title: 'Ver carrito',
+  description: 'Returns the current cart: lines (product, size, color, quantity, prices in COP), applied coupon, discount and total.',
+  inputSchema: { type: 'object', properties: {} },
+  annotations: { readOnlyHint: true },
   async execute() {
-    throw new Error('TODO(acto-2): implement get_cart');
+    return getCartSummary(getState());
   },
 });

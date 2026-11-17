@@ -1,19 +1,28 @@
+import { findProduct } from '../../data/products';
 import { defineTool } from '../types';
+import { productIdSchema } from './schemas';
+import { toProductDetails } from './serializers';
 
 export interface GetProductDetailsInput {
   productId: string;
 }
 
-/**
- * TODO(acto-2): implement the get_product_details tool.
- *   required productId, readOnlyHint, findProduct() + toProductDetails().
- *   Unknown id → { ok: false, code: "PRODUCT_NOT_FOUND", message }.
- * Guide: docs/02-acto-2-ojos.md
- */
 export const getProductDetailsTool = defineTool<GetProductDetailsInput>({
   name: 'get_product_details',
-  description: 'TODO(acto-2): describe this tool for the model.',
-  async execute() {
-    throw new Error('TODO(acto-2): implement get_product_details');
+  title: 'Ver detalle de producto',
+  description:
+    'Returns the full details of one product: description, features, certifications, price in COP and stock for every size/color variant. Reviews are NOT included; use get_product_reviews.',
+  inputSchema: {
+    type: 'object',
+    properties: { productId: productIdSchema },
+    required: ['productId'],
+  },
+  annotations: { readOnlyHint: true },
+  async execute({ productId }) {
+    const product = findProduct(productId);
+    if (!product) {
+      return { ok: false, code: 'PRODUCT_NOT_FOUND', message: `No existe un producto con id "${productId}". Usa search_products.` };
+    }
+    return toProductDetails(product);
   },
 });
