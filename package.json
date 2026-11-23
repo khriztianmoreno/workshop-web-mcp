@@ -22,7 +22,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
-    "check": "node scripts/check-env.mjs"
+    "check": "node scripts/check-env.mjs",
+    "eval:injection": "tsx scripts/injection-eval.ts"
   },
   "dependencies": {
     "@google/genai": "^3.4.0",
