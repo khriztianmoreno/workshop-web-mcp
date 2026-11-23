@@ -113,7 +113,7 @@ En un PaaS, define `GEMINI_API_KEY` y `WORKSHOP_TOKEN` en el **almacén de secre
 | Variable | Qué hace | Valor por defecto |
 | --- | --- | --- |
 | `WORKSHOP_TOKEN` | Token compartido de la sala, de **24 caracteres o más** (el servidor no arranca con uno más corto). Sin él, el proxy queda abierto (solo para desarrollo local). | vacío (sin token) |
-| `AUTH_FAILURES_PER_MINUTE` | Intentos con token inválido por IP y minuto antes de responder 429. Frena la fuerza bruta del token. | `30` |
+| `AUTH_FAILURES_PER_MINUTE` | Tokens inválidos **distintos** por IP y minuto antes de responder 429 (no cuenta intentos: repetir el mismo token equivocado, o no enviar ninguno, cuenta una vez). Frena la fuerza bruta del token. | `30` |
 | `ALLOWED_ORIGINS` | Orígenes del navegador permitidos por CORS. Los asistentes abren la app en `localhost:5173`, así que el valor por defecto ya sirve. Con `*` y token, el servidor muestra una advertencia al arrancar. | `http://localhost:5173,http://127.0.0.1:5173` |
 | `TRUST_PROXY` | Número **exacto** de proxies inversos de confianza delante del servidor (balanceador, Cloud Run, Render, Fly, nginx). Con `1` se usa la entrada más a la derecha de `x-forwarded-for`. Déjalo vacío si el servidor recibe conexiones directas: si no, cualquiera falsifica su IP. | vacío (usa la IP del socket) |
 | `RATE_LIMIT_PER_MINUTE` | Límite por IP de cliente. Toda la sala puede salir por la misma IP (NAT del recinto). | `600` con token · `60` sin token |
@@ -134,7 +134,7 @@ Cuidados con el token:
 - **Viaja en la URL** (`/t/<token>`), así que puede quedar en historiales, capturas y logs. **Nunca lo proyectes** ni lo pongas en las slides: compártelo por el chat del taller.
 - Guárdalo en el **almacén de secretos** del hosting, no en el repositorio.
 - **Rótalo al terminar el evento** (o apaga el proxy), igual que la clave de Gemini.
-- Tras `AUTH_FAILURES_PER_MINUTE` intentos fallidos (30 por defecto), esa IP recibe 429 durante un minuto, incluso con el token correcto. Si toda la sala comparte una IP, unos pocos `.env` mal copiados pueden bloquearla un minuto: pide que copien la URL completa.
+- Tras `AUTH_FAILURES_PER_MINUTE` tokens inválidos **distintos** en un minuto (30 por defecto), esa IP recibe 429 durante ese minuto, incluso con el token correcto. Se cuentan valores distintos, no intentos: si varias personas de la sala repiten el mismo token mal copiado (o ninguno), solo reciben 401 y no bloquean a los demás. El umbral solo se alcanza con muchos tokens equivocados *diferentes* en el mismo minuto; aun así, pide que copien la URL completa.
 
 ### 3. Qué ponen los asistentes
 
@@ -176,7 +176,7 @@ La clave por cliente debe ser **tu IP pública** en las dos llamadas. Si ves la 
 ### 5. Durante y después
 
 - Si algo falla, el chat muestra un mensaje genérico con un `id`. Búscalo en los logs del servidor (`[proxy] <id> ...`) para ver el detalle.
-- Un 429 con "saturado" es el límite global; con "desde tu conexión", el límite por IP; con "token inválido", demasiados intentos fallidos desde esa IP. Súbelos si la sala comparte una sola IP.
+- Un 429 con "saturado" es el límite global; con "desde tu conexión", el límite por IP; con "token inválido", demasiados tokens inválidos distintos desde esa IP. Súbelos si la sala comparte una sola IP.
 - Al terminar: apaga el servidor, **revoca la clave** y **rota el token**.
 
 ## Guion por acto

@@ -214,6 +214,37 @@ describe('workshop token', () => {
     expect((await postChat(app, { path: `/t/${TOKEN}/api/chat`, ip: '10.0.0.9' })).status).toBe(200);
   });
 
+  it('never blocks a room that repeats the same wrong token', async () => {
+    const config = loadConfig({ AGENT_MODE: 'mock', WORKSHOP_TOKEN: TOKEN, AUTH_FAILURES_PER_MINUTE: '3' }, []);
+    const app = createApp(config);
+    for (let i = 0; i < 100; i += 1) {
+      const path = i % 2 === 0 ? '/t/typo-in-env/api/chat' : '/t/typo-in-env/api/health';
+      const response =
+        i % 2 === 0 ? await postChat(app, { path, ip: '10.7.7.7' }) : await app.request(path, {}, socket('10.7.7.7'));
+      expect(response.status).toBe(401);
+    }
+    expect((await postChat(app, { path: `/t/${TOKEN}/api/chat`, ip: '10.7.7.7' })).status).toBe(200);
+  });
+
+  it('never blocks a room that repeats a missing token', async () => {
+    const config = loadConfig({ AGENT_MODE: 'mock', WORKSHOP_TOKEN: TOKEN, AUTH_FAILURES_PER_MINUTE: '3' }, []);
+    const app = createApp(config);
+    for (let i = 0; i < 100; i += 1) {
+      expect((await postChat(app, { ip: '10.8.8.8' })).status).toBe(401);
+    }
+    expect((await postChat(app, { headers: { authorization: `Bearer ${TOKEN}` }, ip: '10.8.8.8' })).status).toBe(200);
+  });
+
+  it('blocks at the threshold of distinct wrong tokens, mixing path and header tokens', async () => {
+    const config = loadConfig({ AGENT_MODE: 'mock', WORKSHOP_TOKEN: TOKEN, AUTH_FAILURES_PER_MINUTE: '3' }, []);
+    const app = createApp(config);
+    expect((await postChat(app, { path: '/t/guess-a/api/chat', ip: '10.9.9.9' })).status).toBe(401);
+    expect((await postChat(app, { headers: { authorization: 'Bearer guess-a' }, ip: '10.9.9.9' })).status).toBe(401);
+    expect((await postChat(app, { headers: { 'x-workshop-token': 'guess-b' }, ip: '10.9.9.9' })).status).toBe(401);
+    expect((await postChat(app, { ip: '10.9.9.9' })).status).toBe(401);
+    expect((await postChat(app, { path: `/t/${TOKEN}/api/chat`, ip: '10.9.9.9' })).status).toBe(429);
+  });
+
   it('does not count successful requests as auth failures', async () => {
     const config = loadConfig({ AGENT_MODE: 'mock', WORKSHOP_TOKEN: TOKEN, AUTH_FAILURES_PER_MINUTE: '1' }, []);
     const app = createApp(config);

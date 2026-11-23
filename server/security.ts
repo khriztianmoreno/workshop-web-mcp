@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
 /**
  * Constant-time token comparison. Both sides are hashed first so the comparison never
@@ -51,18 +51,20 @@ export interface RateLimiterOptions {
 
 const OVERFLOW_KEY = '\u0000overflow';
 
-interface WindowOptions {
+interface WindowOptions<T> {
   windowMs: number;
   maxClients: number;
   now: () => number;
+  /** Fresh per-key state for a new window. */
+  initial: () => T;
 }
 
 /**
- * Per-key fixed-window counters with bounded memory: expired keys are swept once per window,
+ * Per-key fixed-window state with bounded memory: expired keys are swept once per window,
  * and beyond maxClients new keys share one overflow bucket so they cannot mint fresh quotas.
  */
-function createWindowCounters({ windowMs, maxClients, now }: WindowOptions) {
-  const entries = new Map<string, { windowStart: number; count: number }>();
+function createWindowStore<T>({ windowMs, maxClients, now, initial }: WindowOptions<T>) {
+  const entries = new Map<string, { windowStart: number; state: T }>();
   let lastSweep = now();
 
   const expired = (windowStart: number, time: number) => time - windowStart >= windowMs;
@@ -74,19 +76,19 @@ function createWindowCounters({ windowMs, maxClients, now }: WindowOptions) {
     lastSweep = time;
   }
 
-  /** The live counter for a key, starting a fresh window when needed. */
-  function entryFor(rawKey: string, time: number) {
+  /** The live state for a key, starting a fresh window when needed. */
+  function stateFor(rawKey: string, time: number): T {
     if (time - lastSweep >= windowMs || entries.size >= maxClients) sweep(time);
     const key = entries.has(rawKey) || entries.size < maxClients ? rawKey : OVERFLOW_KEY;
     let entry = entries.get(key);
     if (!entry || expired(entry.windowStart, time)) {
-      entry = { windowStart: time, count: 0 };
+      entry = { windowStart: time, state: initial() };
       entries.set(key, entry);
     }
-    return entry;
+    return entry.state;
   }
 
-  return { entryFor, expired, size: () => entries.size };
+  return { stateFor, expired, size: () => entries.size };
 }
 
 /** Fixed-window limiter with a per-client and a global budget. Memory is bounded. */
@@ -97,12 +99,12 @@ export function createRateLimiter({
   maxClients = 10_000,
   now = Date.now,
 }: RateLimiterOptions) {
-  const clients = createWindowCounters({ windowMs, maxClients, now });
+  const clients = createWindowStore({ windowMs, maxClients, now, initial: () => ({ count: 0 }) });
   let globalWindow = { windowStart: now(), count: 0 };
 
   function check(key: string): RateLimitVerdict {
     const time = now();
-    const entry = clients.entryFor(key, time);
+    const entry = clients.stateFor(key, time);
     if (entry.count >= perClient) return 'client';
 
     if (clients.expired(globalWindow.windowStart, time)) globalWindow = { windowStart: time, count: 0 };
@@ -118,15 +120,21 @@ export function createRateLimiter({
 }
 
 export interface FailureLimiterOptions {
-  /** Failures allowed per client per window; at this count the client is blocked. */
+  /** Distinct failed tokens allowed per client per window; at this count the client is blocked. */
   maxFailures: number;
   windowMs?: number;
   maxClients?: number;
   now?: () => number;
 }
 
+/** Stand-in for "no token at all", so every missing-token request counts as the same value. */
+const MISSING_TOKEN = '\u0000missing';
+
 /**
- * Counts failed authentication attempts per client so the room token cannot be brute-forced.
+ * Limits failed authentication per client by counting DISTINCT failed tokens, not attempts.
+ * A whole room behind one NAT IP repeating the same mistyped (or missing) token counts once,
+ * while a brute-forcer must try new values and hits the budget. Guesses are never stored raw:
+ * only a salted, truncated SHA-256 per token, and each client's set stops growing at the budget.
  * Checking is free; only record() spends budget, so legitimate traffic is never counted.
  */
 export function createFailureLimiter({
@@ -135,13 +143,23 @@ export function createFailureLimiter({
   maxClients = 10_000,
   now = Date.now,
 }: FailureLimiterOptions) {
-  const clients = createWindowCounters({ windowMs, maxClients, now });
+  const clients = createWindowStore({ windowMs, maxClients, now, initial: () => new Set<string>() });
+  const salt = randomBytes(16);
+  const fingerprint = (token: string | undefined) =>
+    createHash('sha256')
+      .update(salt)
+      .update(token || MISSING_TOKEN, 'utf8')
+      .digest('base64url')
+      .slice(0, 16);
 
   return {
-    blocked: (key: string) => clients.entryFor(key, now()).count >= maxFailures,
-    record: (key: string) => {
-      clients.entryFor(key, now()).count += 1;
+    blocked: (key: string) => clients.stateFor(key, now()).size >= maxFailures,
+    record: (key: string, token: string | undefined) => {
+      const failed = clients.stateFor(key, now());
+      if (failed.size < maxFailures) failed.add(fingerprint(token));
     },
+    /** Distinct failed tokens recorded for a client in the current window. */
+    distinctFailures: (key: string) => clients.stateFor(key, now()).size,
     trackedClients: clients.size,
   };
 }

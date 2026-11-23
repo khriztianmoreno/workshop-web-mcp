@@ -44,7 +44,10 @@ export interface ServerConfig extends RequestLimits {
   trustProxyHops: number;
   rateLimitPerClient: number;
   rateLimitGlobal: number;
-  /** Failed token attempts per client per minute before it gets 429s. */
+  /**
+   * DISTINCT failed tokens per client IP per minute before it gets 429s (name kept for
+   * compatibility). Repeating the same wrong or missing token counts once.
+   */
   authFailuresPerMinute: number;
   maxBodyBytes: number;
   maxOutputTokens: number;

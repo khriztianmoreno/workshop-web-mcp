@@ -124,15 +124,32 @@ describe('createFailureLimiter', () => {
     return { now: () => time, advance: (ms: number) => (time += ms) };
   }
 
-  it('blocks a client only after it reaches the failure budget', () => {
+  it('blocks a client once it reaches the budget of distinct failed tokens', () => {
     const { now } = clock();
     const failures = createFailureLimiter({ maxFailures: 2, now });
     expect(failures.blocked('a')).toBe(false);
-    failures.record('a');
+    failures.record('a', 'guess-1');
     expect(failures.blocked('a')).toBe(false);
-    failures.record('a');
+    failures.record('a', 'guess-2');
     expect(failures.blocked('a')).toBe(true);
     expect(failures.blocked('b')).toBe(false);
+  });
+
+  it('counts the same wrong token only once', () => {
+    const { now } = clock();
+    const failures = createFailureLimiter({ maxFailures: 2, now });
+    for (let i = 0; i < 100; i += 1) failures.record('a', 'typo-in-env');
+    expect(failures.blocked('a')).toBe(false);
+    expect(failures.distinctFailures('a')).toBe(1);
+  });
+
+  it('counts a missing token as one distinct value', () => {
+    const { now } = clock();
+    const failures = createFailureLimiter({ maxFailures: 2, now });
+    for (let i = 0; i < 50; i += 1) failures.record('a', undefined);
+    for (let i = 0; i < 50; i += 1) failures.record('a', '');
+    expect(failures.blocked('a')).toBe(false);
+    expect(failures.distinctFailures('a')).toBe(1);
   });
 
   it('checking does not count as a failure', () => {
@@ -143,19 +160,34 @@ describe('createFailureLimiter', () => {
 
   it('forgets failures after the window', () => {
     const time = clock();
-    const failures = createFailureLimiter({ maxFailures: 1, now: time.now });
-    failures.record('a');
+    const failures = createFailureLimiter({ maxFailures: 2, now: time.now });
+    failures.record('a', 'guess-1');
+    failures.record('a', 'guess-2');
     expect(failures.blocked('a')).toBe(true);
-    time.advance(60_001);
+    time.advance(59_999);
+    expect(failures.blocked('a')).toBe(true);
+    time.advance(2);
     expect(failures.blocked('a')).toBe(false);
+    expect(failures.distinctFailures('a')).toBe(0);
+    // A token seen in the previous window counts again in the new one.
+    failures.record('a', 'guess-1');
+    expect(failures.distinctFailures('a')).toBe(1);
+  });
+
+  it('bounds the set of failed tokens kept per client', () => {
+    const { now } = clock();
+    const failures = createFailureLimiter({ maxFailures: 5, now });
+    for (let i = 0; i < 1000; i += 1) failures.record('a', `guess-${i}`);
+    expect(failures.distinctFailures('a')).toBe(5);
+    expect(failures.blocked('a')).toBe(true);
   });
 
   it('bounds memory with a shared overflow bucket', () => {
     const { now } = clock();
     const failures = createFailureLimiter({ maxFailures: 1, maxClients: 2, now });
-    failures.record('a');
-    failures.record('b');
-    failures.record('c');
+    failures.record('a', 'x');
+    failures.record('b', 'x');
+    failures.record('c', 'x');
     expect(failures.trackedClients()).toBeLessThanOrEqual(3);
     // 'd' is new and lands in the overflow bucket that 'c' already filled.
     expect(failures.blocked('d')).toBe(true);

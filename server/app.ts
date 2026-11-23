@@ -18,7 +18,7 @@ type AppEnv = { Bindings: Partial<HttpBindings> | undefined; Variables: { reques
 const UNAUTHORIZED =
   'Falta el token del taller o no es válido. Revisa AGENT_BASE_URL o VITE_AGENT_URL: deben terminar en /t/<token>.';
 const TOO_MANY_AUTH_FAILURES =
-  'Demasiados intentos con un token inválido desde tu conexión. Corrige el token y espera un minuto.';
+  'Llegaron demasiados valores distintos de token inválido desde tu conexión. Corrige el token y espera un minuto.';
 const TOO_MANY_FROM_CLIENT = 'Demasiadas solicitudes desde tu conexión. Espera un minuto e intenta de nuevo.';
 const TOO_MANY_GLOBAL =
   'El proxy del taller está saturado. Espera un minuto e intenta de nuevo, o usa el modo simulado (AGENT_MODE=mock).';
@@ -76,8 +76,9 @@ export function createApp(config: ServerConfig, agentOverride?: Agent) {
     const pathToken = (c.req.param() as Record<string, string | undefined>).token;
     if (pathToken === undefined && c.req.method === 'GET' && c.req.path === '/api/health') return next();
 
-    // Failed attempts are limited per client so the token cannot be brute-forced. A blocked
-    // client is refused before its token is compared, so a lucky guess cannot be confirmed.
+    // Distinct failed tokens are limited per client so the token cannot be brute-forced, while a
+    // room behind one IP repeating the same typo is never locked out. A blocked client is refused
+    // before its token is compared, so a lucky guess cannot be confirmed.
     const client = clientKey(c);
     if (authFailures.blocked(client)) {
       c.header('retry-after', '60');
@@ -85,7 +86,7 @@ export function createApp(config: ServerConfig, agentOverride?: Agent) {
     }
     const provided = pathToken ?? headerToken(c.req.header('authorization'), c.req.header('x-workshop-token'));
     if (tokensMatch(provided, expected)) return next();
-    authFailures.record(client);
+    authFailures.record(client, provided);
     return c.json({ error: UNAUTHORIZED }, 401);
   };
 
