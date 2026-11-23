@@ -8,8 +8,10 @@ import type {
 
 export interface RequestLimits {
   maxMessages: number;
-  /** Max characters in any single text part (user text, model text, raw text parts, tool descriptions). */
+  /** Max characters in one user message or tool description. */
   maxTextChars: number;
+  /** Max characters in one model text or rawParts text part (model answers run longer than prompts). */
+  maxModelTextChars: number;
   maxTools: number;
   /** Max size of one tool's JSON schema, serialized. */
   maxToolSchemaBytes: number;
@@ -76,11 +78,11 @@ function parseMessages(value: unknown, limits: RequestLimits): ChatMessage[] {
     throw new TooLarge(`La conversación es demasiado larga (máximo ${limits.maxMessages} mensajes). ${START_OVER}`);
   }
 
-  const text = (candidate: unknown, optional = false): string | undefined => {
+  const text = (candidate: unknown, maxChars: number, optional = false): string | undefined => {
     if (candidate === undefined && optional) return undefined;
     if (typeof candidate !== 'string') throw new Invalid(INVALID_SHAPE);
-    if (candidate.length > limits.maxTextChars) {
-      throw new TooLarge(`Un mensaje es demasiado largo (máximo ${limits.maxTextChars} caracteres). ${START_OVER}`);
+    if (candidate.length > maxChars) {
+      throw new TooLarge(`Un mensaje es demasiado largo (máximo ${maxChars} caracteres). ${START_OVER}`);
     }
     return candidate;
   };
@@ -89,12 +91,12 @@ function parseMessages(value: unknown, limits: RequestLimits): ChatMessage[] {
     if (!isRecord(message)) throw new Invalid(INVALID_SHAPE);
     switch (message.role) {
       case 'user':
-        return { role: 'user', text: text(message.text) as string };
+        return { role: 'user', text: text(message.text, limits.maxTextChars) as string };
       case 'model': {
         const functionCalls = message.functionCalls === undefined ? undefined : parseFunctionCalls(message.functionCalls);
         const rawParts = message.rawParts === undefined ? undefined : sanitizeRawParts(message.rawParts);
-        for (const part of rawParts ?? []) if (part.text !== undefined) text(part.text);
-        const modelText = text(message.text, true);
+        for (const part of rawParts ?? []) if (part.text !== undefined) text(part.text, limits.maxModelTextChars);
+        const modelText = text(message.text, limits.maxModelTextChars, true);
         return {
           role: 'model',
           ...(modelText !== undefined ? { text: modelText } : {}),

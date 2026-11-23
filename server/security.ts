@@ -51,6 +51,44 @@ export interface RateLimiterOptions {
 
 const OVERFLOW_KEY = '\u0000overflow';
 
+interface WindowOptions {
+  windowMs: number;
+  maxClients: number;
+  now: () => number;
+}
+
+/**
+ * Per-key fixed-window counters with bounded memory: expired keys are swept once per window,
+ * and beyond maxClients new keys share one overflow bucket so they cannot mint fresh quotas.
+ */
+function createWindowCounters({ windowMs, maxClients, now }: WindowOptions) {
+  const entries = new Map<string, { windowStart: number; count: number }>();
+  let lastSweep = now();
+
+  const expired = (windowStart: number, time: number) => time - windowStart >= windowMs;
+
+  function sweep(time: number) {
+    for (const [key, entry] of entries) {
+      if (expired(entry.windowStart, time)) entries.delete(key);
+    }
+    lastSweep = time;
+  }
+
+  /** The live counter for a key, starting a fresh window when needed. */
+  function entryFor(rawKey: string, time: number) {
+    if (time - lastSweep >= windowMs || entries.size >= maxClients) sweep(time);
+    const key = entries.has(rawKey) || entries.size < maxClients ? rawKey : OVERFLOW_KEY;
+    let entry = entries.get(key);
+    if (!entry || expired(entry.windowStart, time)) {
+      entry = { windowStart: time, count: 0 };
+      entries.set(key, entry);
+    }
+    return entry;
+  }
+
+  return { entryFor, expired, size: () => entries.size };
+}
+
 /** Fixed-window limiter with a per-client and a global budget. Memory is bounded. */
 export function createRateLimiter({
   perClient,
@@ -59,37 +97,51 @@ export function createRateLimiter({
   maxClients = 10_000,
   now = Date.now,
 }: RateLimiterOptions) {
-  const clients = new Map<string, { windowStart: number; count: number }>();
+  const clients = createWindowCounters({ windowMs, maxClients, now });
   let globalWindow = { windowStart: now(), count: 0 };
-  let lastSweep = now();
 
-  const expired = (windowStart: number, time: number) => time - windowStart >= windowMs;
-
-  function sweep(time: number) {
-    for (const [key, entry] of clients) {
-      if (expired(entry.windowStart, time)) clients.delete(key);
-    }
-    lastSweep = time;
-  }
-
-  function check(rawKey: string): RateLimitVerdict {
+  function check(key: string): RateLimitVerdict {
     const time = now();
-    if (time - lastSweep >= windowMs || clients.size >= maxClients) sweep(time);
-
-    const key = clients.has(rawKey) || clients.size < maxClients ? rawKey : OVERFLOW_KEY;
-    let entry = clients.get(key);
-    if (!entry || expired(entry.windowStart, time)) {
-      entry = { windowStart: time, count: 0 };
-      clients.set(key, entry);
-    }
+    const entry = clients.entryFor(key, time);
     if (entry.count >= perClient) return 'client';
-    entry.count += 1;
 
-    if (expired(globalWindow.windowStart, time)) globalWindow = { windowStart: time, count: 0 };
+    if (clients.expired(globalWindow.windowStart, time)) globalWindow = { windowStart: time, count: 0 };
+    // A request the room budget rejects must not also spend the client's own quota.
     if (globalWindow.count >= global) return 'global';
+
+    entry.count += 1;
     globalWindow.count += 1;
     return 'ok';
   }
 
-  return { check, trackedClients: () => clients.size };
+  return { check, trackedClients: clients.size };
+}
+
+export interface FailureLimiterOptions {
+  /** Failures allowed per client per window; at this count the client is blocked. */
+  maxFailures: number;
+  windowMs?: number;
+  maxClients?: number;
+  now?: () => number;
+}
+
+/**
+ * Counts failed authentication attempts per client so the room token cannot be brute-forced.
+ * Checking is free; only record() spends budget, so legitimate traffic is never counted.
+ */
+export function createFailureLimiter({
+  maxFailures,
+  windowMs = 60_000,
+  maxClients = 10_000,
+  now = Date.now,
+}: FailureLimiterOptions) {
+  const clients = createWindowCounters({ windowMs, maxClients, now });
+
+  return {
+    blocked: (key: string) => clients.entryFor(key, now()).count >= maxFailures,
+    record: (key: string) => {
+      clients.entryFor(key, now()).count += 1;
+    },
+    trackedClients: clients.size,
+  };
 }

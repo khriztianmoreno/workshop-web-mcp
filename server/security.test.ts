@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { clientIpFrom, createRateLimiter, tokensMatch } from './security';
+import { clientIpFrom, createFailureLimiter, createRateLimiter, tokensMatch } from './security';
 
 describe('tokensMatch', () => {
   it('accepts the exact token', () => {
@@ -94,6 +94,17 @@ describe('createRateLimiter', () => {
     expect(limiter.trackedClients()).toBe(1);
   });
 
+  it('does not spend a client quota when the global limit rejects', () => {
+    const time = clock();
+    const limiter = createRateLimiter({ perClient: 1, global: 1, now: time.now });
+    expect(limiter.check('b')).toBe('ok');
+    time.advance(30_000);
+    expect(limiter.check('a')).toBe('global');
+    // The global window (started at t=0) resets; a's own window (started at t=30s) does not.
+    time.advance(31_000);
+    expect(limiter.check('a')).toBe('ok');
+  });
+
   it('bounds the number of tracked clients and shares an overflow bucket', () => {
     const { now } = clock();
     const limiter = createRateLimiter({ perClient: 1, global: 1_000, maxClients: 3, now });
@@ -104,5 +115,49 @@ describe('createRateLimiter', () => {
     expect(limiter.trackedClients()).toBeLessThanOrEqual(4);
     // New clients beyond the cap share one bucket, so they cannot mint fresh quotas.
     expect(limiter.check('e')).toBe('client');
+  });
+});
+
+describe('createFailureLimiter', () => {
+  function clock(start = 0) {
+    let time = start;
+    return { now: () => time, advance: (ms: number) => (time += ms) };
+  }
+
+  it('blocks a client only after it reaches the failure budget', () => {
+    const { now } = clock();
+    const failures = createFailureLimiter({ maxFailures: 2, now });
+    expect(failures.blocked('a')).toBe(false);
+    failures.record('a');
+    expect(failures.blocked('a')).toBe(false);
+    failures.record('a');
+    expect(failures.blocked('a')).toBe(true);
+    expect(failures.blocked('b')).toBe(false);
+  });
+
+  it('checking does not count as a failure', () => {
+    const { now } = clock();
+    const failures = createFailureLimiter({ maxFailures: 1, now });
+    for (let i = 0; i < 10; i += 1) expect(failures.blocked('a')).toBe(false);
+  });
+
+  it('forgets failures after the window', () => {
+    const time = clock();
+    const failures = createFailureLimiter({ maxFailures: 1, now: time.now });
+    failures.record('a');
+    expect(failures.blocked('a')).toBe(true);
+    time.advance(60_001);
+    expect(failures.blocked('a')).toBe(false);
+  });
+
+  it('bounds memory with a shared overflow bucket', () => {
+    const { now } = clock();
+    const failures = createFailureLimiter({ maxFailures: 1, maxClients: 2, now });
+    failures.record('a');
+    failures.record('b');
+    failures.record('c');
+    expect(failures.trackedClients()).toBeLessThanOrEqual(3);
+    // 'd' is new and lands in the overflow bucket that 'c' already filled.
+    expect(failures.blocked('d')).toBe(true);
   });
 });

@@ -22,6 +22,7 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 - [ ] Publicar el repositorio y verificar que los tags `acto-1`…`final` existen en el remoto.
 - [ ] Crear una clave de Gemini dedicada al taller y revisar su cuota.
 - [ ] Desplegar el **proxy del instructor** con `WORKSHOP_TOKEN` (ver "Hostear el proxy para la sala") y probarlo con curl.
+- [ ] Verificar el límite por cliente **a través de la URL pública real** (ver "4. Probar con curl"): con `TRUST_PROXY` en el número exacto de saltos, los logs deben mostrar `new client key: <tu IP pública>`, también al enviar un `x-forwarded-for` falso. Si aparece la IP del balanceador o la IP falsa, corrige `TRUST_PROXY` antes del evento.
 - [ ] Publicar la **guía en vivo** (ver "Publicar la guía en vivo") y abrirla en el celular para revisarla.
 
 ### El día anterior
@@ -37,7 +38,7 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 
 - [ ] Proyector: zoom del navegador al 125 %, editor con fuente 18+, terminal con fuente grande.
 - [ ] Dos ventanas: la tienda (izquierda) y el editor (derecha). DevTools cerradas hasta el Acto 1.
-- [ ] Escribir en la pizarra o en una diapositiva: URL de la guía, URL del repo, URL del proxy, Wi-Fi (la slide de verificación ya las proyecta desde `talk.ts`).
+- [ ] Escribir en la pizarra o en una diapositiva: URL de la guía, URL del repo, URL del proxy **sin el token**, Wi-Fi (la slide de verificación ya las proyecta desde `talk.ts`). El token se comparte por el chat del taller, nunca en el proyector.
 - [ ] `npm run dev` corriendo en `acto-1`; insignia del panel visible.
 - [ ] Slides abiertas desde la carpeta en `main` (`npm run slides`): presentación en el proyector y vista del orador en tu pantalla.
 
@@ -99,6 +100,7 @@ El proxy endurecido vive en `main` (los tags de los actos no cambian). En cualqu
 
 ```bash
 git clone <repo> && cd workshop-web-mcp && git switch main && npm ci
+openssl rand -hex 16          # genera el token de la sala (32 caracteres)
 GEMINI_API_KEY=... \
 WORKSHOP_TOKEN=<token-de-la-sala> \
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 \
@@ -106,20 +108,33 @@ TRUST_PROXY=1 \
 PORT=8787 npm run server
 ```
 
+En un PaaS, define `GEMINI_API_KEY` y `WORKSHOP_TOKEN` en el **almacén de secretos** del servicio, no en el repositorio ni en la línea de comandos compartida.
+
 | Variable | Qué hace | Valor por defecto |
 | --- | --- | --- |
-| `WORKSHOP_TOKEN` | Token compartido de la sala. Sin él, el proxy queda abierto (solo para desarrollo local). | vacío (sin token) |
-| `ALLOWED_ORIGINS` | Orígenes del navegador permitidos por CORS. Los asistentes abren la app en `localhost:5173`, así que el valor por defecto ya sirve. | `http://localhost:5173,http://127.0.0.1:5173` |
-| `TRUST_PROXY` | Número de proxies inversos de confianza delante del servidor (balanceador, Cloud Run, Render, Fly, nginx). Con `1` se usa la entrada más a la derecha de `x-forwarded-for`. Déjalo vacío si el servidor recibe conexiones directas: si no, cualquiera falsifica su IP. | vacío (usa la IP del socket) |
-| `RATE_LIMIT_PER_MINUTE` | Límite por IP de cliente. Toda la sala puede salir por la misma IP (NAT del recinto). | `60` |
-| `RATE_LIMIT_GLOBAL_PER_MINUTE` | Límite total del proxy, sumando a todos. | `600` |
-| `MAX_BODY_BYTES` | Tamaño máximo del cuerpo de cada solicitud. | `65536` |
-| `MAX_MESSAGES` / `MAX_TEXT_CHARS` / `MAX_TOOLS` / `MAX_TOOL_SCHEMA_BYTES` | Topes de mensajes, caracteres por texto, herramientas y tamaño de cada esquema. | `60` / `8000` / `32` / `8192` |
-| `MAX_OUTPUT_TOKENS` | Tope de tokens generados por llamada (incluye el razonamiento). | `4096` |
+| `WORKSHOP_TOKEN` | Token compartido de la sala, de **24 caracteres o más** (el servidor no arranca con uno más corto). Sin él, el proxy queda abierto (solo para desarrollo local). | vacío (sin token) |
+| `AUTH_FAILURES_PER_MINUTE` | Intentos con token inválido por IP y minuto antes de responder 429. Frena la fuerza bruta del token. | `30` |
+| `ALLOWED_ORIGINS` | Orígenes del navegador permitidos por CORS. Los asistentes abren la app en `localhost:5173`, así que el valor por defecto ya sirve. Con `*` y token, el servidor muestra una advertencia al arrancar. | `http://localhost:5173,http://127.0.0.1:5173` |
+| `TRUST_PROXY` | Número **exacto** de proxies inversos de confianza delante del servidor (balanceador, Cloud Run, Render, Fly, nginx). Con `1` se usa la entrada más a la derecha de `x-forwarded-for`. Déjalo vacío si el servidor recibe conexiones directas: si no, cualquiera falsifica su IP. | vacío (usa la IP del socket) |
+| `RATE_LIMIT_PER_MINUTE` | Límite por IP de cliente. Toda la sala puede salir por la misma IP (NAT del recinto). | `600` con token · `60` sin token |
+| `RATE_LIMIT_GLOBAL_PER_MINUTE` | Límite total del proxy, sumando a todos. | `1500` con token · `600` sin token |
+| `MAX_BODY_BYTES` | Tamaño máximo del cuerpo de cada solicitud. El historial, las herramientas y las firmas de pensamiento de Gemini 3 crecen de un acto a otro. | `262144` (256 KB) |
+| `MAX_MESSAGES` / `MAX_TEXT_CHARS` / `MAX_MODEL_TEXT_CHARS` / `MAX_TOOLS` / `MAX_TOOL_SCHEMA_BYTES` | Topes de mensajes, caracteres por mensaje del usuario, caracteres por texto del modelo, herramientas y tamaño de cada esquema. | `60` / `8000` / `32000` / `32` / `8192` |
+| `MAX_OUTPUT_TOKENS` | Tope de tokens generados por llamada. El razonamiento cuenta: con un valor bajo, el modelo puede devolver respuestas vacías. | `8192` |
+| `GEMINI_THINKING_LEVEL` | Nivel de razonamiento opcional: `MINIMAL`, `LOW`, `MEDIUM`, `HIGH` o `XHIGH`. Vacío = el del modelo. | vacío |
+
+**Valores recomendados para la sala (~40 personas):** deja los valores por defecto del modo con token. Un prompt jefe son hasta 9 llamadas a `/api/chat`; 30 personas lanzándolo en el mismo minuto detrás de una sola IP suman ≈270 llamadas, dentro de `600` por cliente. El global de `1500` deja margen para picos y reintentos. Si la red del recinto da una IP distinta a cada asistente, puedes bajar `RATE_LIMIT_PER_MINUTE` a `120`. Estos límites no reemplazan el tope de gasto de la clave.
 
 El modelo y el *system prompt* los fija el servidor; el cliente no puede cambiarlos. Las partes `rawParts` que devuelve el navegador se filtran: solo pasan texto, firmas de pensamiento y llamadas a funciones.
 
-Elige un token largo y sin caracteres especiales (letras, números y guiones), por ejemplo `devfest-bogota-7f3k9q2m`. No es un secreto frente a los asistentes: solo evita que cualquiera en internet use el proxy. Por eso el tope de gasto sigue siendo obligatorio.
+Genera el token con `openssl rand -hex 16` (32 caracteres hexadecimales; el mínimo aceptado es 24). No es un secreto frente a los asistentes: solo evita que cualquiera en internet use el proxy. Por eso el tope de gasto sigue siendo obligatorio.
+
+Cuidados con el token:
+
+- **Viaja en la URL** (`/t/<token>`), así que puede quedar en historiales, capturas y logs. **Nunca lo proyectes** ni lo pongas en las slides: compártelo por el chat del taller.
+- Guárdalo en el **almacén de secretos** del hosting, no en el repositorio.
+- **Rótalo al terminar el evento** (o apaga el proxy), igual que la clave de Gemini.
+- Tras `AUTH_FAILURES_PER_MINUTE` intentos fallidos (30 por defecto), esa IP recibe 429 durante un minuto, incluso con el token correcto. Si toda la sala comparte una IP, unos pocos `.env` mal copiados pueden bloquearla un minuto: pide que copien la URL completa.
 
 ### 3. Qué ponen los asistentes
 
@@ -148,15 +163,21 @@ curl -s $P/api/health                                   # 200 {"ok":true,"mode":
 curl -s -o /dev/null -w '%{http_code}\n' -H 'content-type: application/json' -d "$BODY" $P/api/chat          # 401
 curl -s -o /dev/null -w '%{http_code}\n' -H 'content-type: application/json' -d "$BODY" $P/t/$T/api/chat     # 200
 curl -s -o /dev/null -w '%{http_code}\n' -H "authorization: Bearer $T" -H 'content-type: application/json' -d "$BODY" $P/api/chat  # 200
+
+# TRUST_PROXY: haz estas dos llamadas desde tu red y mira los logs del servidor.
+curl -s -o /dev/null -w '%{http_code}\n' -H 'content-type: application/json' -d "$BODY" $P/t/$T/api/chat                               # log: new client key: <tu IP pública>
+curl -s -o /dev/null -w '%{http_code}\n' -H 'x-forwarded-for: 6.6.6.6' -H 'content-type: application/json' -d "$BODY" $P/t/$T/api/chat  # no debe aparecer 6.6.6.6
 ```
+
+La clave por cliente debe ser **tu IP pública** en las dos llamadas. Si ves la IP interna del balanceador, `TRUST_PROXY` es menor que el número real de saltos (toda la sala compartiría un cupo). Si ves `6.6.6.6`, es mayor (cualquiera podría inventarse un cupo nuevo en cada solicitud). Ajusta el valor y repite.
 
 > CORS no protege el proxy: solo lo respetan los navegadores. `curl` o un script lo ignoran. La protección real es el token, los límites y el tope de gasto de la clave.
 
 ### 5. Durante y después
 
 - Si algo falla, el chat muestra un mensaje genérico con un `id`. Búscalo en los logs del servidor (`[proxy] <id> ...`) para ver el detalle.
-- Un 429 con "saturado" es el límite global; con "desde tu conexión", el límite por IP. Súbelos si la sala comparte una sola IP.
-- Al terminar: apaga el servidor y **revoca la clave**.
+- Un 429 con "saturado" es el límite global; con "desde tu conexión", el límite por IP; con "token inválido", demasiados intentos fallidos desde esa IP. Súbelos si la sala comparte una sola IP.
+- Al terminar: apaga el servidor, **revoca la clave** y **rota el token**.
 
 ## Guion por acto
 

@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from './app';
-import { loadConfig } from './config';
+import { ConfigError, configWarnings, loadConfig } from './config';
 
 const mockConfig = loadConfig({ AGENT_MODE: 'mock' }, []);
-const TOKEN = 'devfest-bogota-2026';
+const TOKEN = '0f3c9a7d1e5b8c2a4f6d0e9b7a1c3e5d';
 const hostedConfig = loadConfig({ AGENT_MODE: 'mock', WORKSHOP_TOKEN: TOKEN }, []);
 
 const validBody = {
@@ -34,32 +34,74 @@ describe('config', () => {
     expect(loadConfig({ GEMINI_API_KEY: 'x' }, ['--mock']).mode).toBe('mock');
   });
 
-  it('uses safe defaults for a hosted room', () => {
+  it('uses modest defaults locally', () => {
     const config = loadConfig({}, []);
     expect(config.workshopToken).toBeUndefined();
     expect(config.allowedOrigins).toEqual(['http://localhost:5173', 'http://127.0.0.1:5173']);
     expect(config.trustProxyHops).toBe(0);
     expect(config.rateLimitPerClient).toBe(60);
     expect(config.rateLimitGlobal).toBe(600);
-    expect(config.maxBodyBytes).toBe(64 * 1024);
-    expect(config.maxOutputTokens).toBe(4096);
+    expect(config.authFailuresPerMinute).toBe(30);
+    expect(config.maxBodyBytes).toBe(256 * 1024);
+    expect(config.maxTextChars).toBe(8000);
+    expect(config.maxModelTextChars).toBe(32000);
+    expect(config.maxOutputTokens).toBe(8192);
+    expect(config.thinkingLevel).toBeUndefined();
+  });
+
+  it('raises rate limits in hosted mode so a room behind one NAT fits', () => {
+    const config = loadConfig({ WORKSHOP_TOKEN: TOKEN }, []);
+    expect(config.rateLimitPerClient).toBe(600);
+    expect(config.rateLimitGlobal).toBe(1500);
+  });
+
+  it('keeps explicit rate limits in hosted mode', () => {
+    const config = loadConfig(
+      { WORKSHOP_TOKEN: TOKEN, RATE_LIMIT_PER_MINUTE: '120', RATE_LIMIT_GLOBAL_PER_MINUTE: '900' },
+      [],
+    );
+    expect(config.rateLimitPerClient).toBe(120);
+    expect(config.rateLimitGlobal).toBe(900);
+  });
+
+  it('refuses a workshop token shorter than 24 characters', () => {
+    expect(() => loadConfig({ WORKSHOP_TOKEN: 'devfest-bogota-2026' }, [])).toThrow(ConfigError);
+    expect(() => loadConfig({ WORKSHOP_TOKEN: 'devfest-bogota-2026' }, [])).toThrow(/24.*openssl rand -hex 16/s);
+    expect(() => loadConfig({ WORKSHOP_TOKEN: 'a'.repeat(24) }, [])).not.toThrow();
+  });
+
+  it('reads an optional Gemini thinking level and rejects unknown ones', () => {
+    expect(loadConfig({ GEMINI_THINKING_LEVEL: 'low' }, []).thinkingLevel).toBe('LOW');
+    expect(() => loadConfig({ GEMINI_THINKING_LEVEL: 'turbo' }, [])).toThrow(ConfigError);
+  });
+
+  it('warns when a hosted proxy allows every origin', () => {
+    expect(configWarnings(loadConfig({ WORKSHOP_TOKEN: TOKEN, ALLOWED_ORIGINS: '*' }, []))).toEqual([
+      expect.stringMatching(/ALLOWED_ORIGINS/),
+    ]);
+    expect(configWarnings(loadConfig({ ALLOWED_ORIGINS: '*' }, []))).toEqual([]);
+    expect(configWarnings(loadConfig({ WORKSHOP_TOKEN: TOKEN }, []))).toEqual([]);
   });
 
   it('reads overrides from the environment', () => {
     const config = loadConfig(
       {
-        WORKSHOP_TOKEN: ' abc ',
+        WORKSHOP_TOKEN: ` ${TOKEN} `,
         ALLOWED_ORIGINS: 'https://a.example, https://b.example',
         TRUST_PROXY: '1',
         RATE_LIMIT_PER_MINUTE: '20',
         RATE_LIMIT_GLOBAL_PER_MINUTE: '200',
         MAX_BODY_BYTES: '1000',
         MAX_OUTPUT_TOKENS: '512',
+        MAX_MODEL_TEXT_CHARS: '1000',
+        AUTH_FAILURES_PER_MINUTE: '5',
       },
       [],
     );
     expect(config).toMatchObject({
-      workshopToken: 'abc',
+      workshopToken: TOKEN,
+      maxModelTextChars: 1000,
+      authFailuresPerMinute: 5,
       allowedOrigins: ['https://a.example', 'https://b.example'],
       trustProxyHops: 1,
       rateLimitPerClient: 20,
@@ -156,9 +198,47 @@ describe('workshop token', () => {
     expect((await app.request(`/t/${TOKEN}/api/health`)).status).toBe(200);
     expect((await app.request('/t/wrong/api/health')).status).toBe(401);
   });
+
+  it('answers 429 after too many failed tokens from one client', async () => {
+    const config = loadConfig({ AGENT_MODE: 'mock', WORKSHOP_TOKEN: TOKEN, AUTH_FAILURES_PER_MINUTE: '3' }, []);
+    const app = createApp(config);
+    for (let i = 0; i < 3; i += 1) {
+      expect((await postChat(app, { path: `/t/guess-${i}/api/chat`, ip: '10.6.6.6' })).status).toBe(401);
+    }
+    const blocked = await postChat(app, { headers: { authorization: 'Bearer guess' }, ip: '10.6.6.6' });
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get('retry-after')).toBe('60');
+    // Once blocked, even the right token is not evaluated: a guess cannot be confirmed.
+    expect((await postChat(app, { path: `/t/${TOKEN}/api/chat`, ip: '10.6.6.6' })).status).toBe(429);
+    // Other clients are unaffected.
+    expect((await postChat(app, { path: `/t/${TOKEN}/api/chat`, ip: '10.0.0.9' })).status).toBe(200);
+  });
+
+  it('does not count successful requests as auth failures', async () => {
+    const config = loadConfig({ AGENT_MODE: 'mock', WORKSHOP_TOKEN: TOKEN, AUTH_FAILURES_PER_MINUTE: '1' }, []);
+    const app = createApp(config);
+    for (let i = 0; i < 3; i += 1) {
+      expect((await postChat(app, { path: `/t/${TOKEN}/api/chat` })).status).toBe(200);
+    }
+  });
 });
 
 describe('request limits', () => {
+  it('accepts a 200 KB body by default and rejects 300 KB', async () => {
+    const app = createApp(mockConfig);
+    const sized = (bytes: number) =>
+      JSON.stringify({
+        ...validBody,
+        messages: [
+          ...validBody.messages,
+          { role: 'tool', results: [{ name: 'search_products', response: { blob: 'x'.repeat(bytes) } }] },
+          { role: 'user', text: 'y' },
+        ],
+      });
+    expect((await postChat(app, { body: sized(200 * 1024) })).status).toBe(200);
+    expect((await postChat(app, { body: sized(300 * 1024) })).status).toBe(413);
+  });
+
   it('rejects bodies over the byte limit with 413', async () => {
     const config = loadConfig({ AGENT_MODE: 'mock', MAX_BODY_BYTES: '2048' }, []);
     const body = JSON.stringify({ ...validBody, messages: [{ role: 'user', text: 'x'.repeat(4000) }] });

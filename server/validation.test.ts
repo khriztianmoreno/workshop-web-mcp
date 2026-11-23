@@ -2,7 +2,13 @@
 import { describe, expect, it } from 'vitest';
 import { parseChatRequest, sanitizeRawParts, type RequestLimits } from './validation';
 
-const limits: RequestLimits = { maxMessages: 4, maxTextChars: 20, maxTools: 2, maxToolSchemaBytes: 60 };
+const limits: RequestLimits = {
+  maxMessages: 4,
+  maxTextChars: 20,
+  maxModelTextChars: 40,
+  maxTools: 2,
+  maxToolSchemaBytes: 60,
+};
 const tool = { name: 'search_products', description: 'search' };
 const user = (text = 'hola') => ({ role: 'user', text });
 
@@ -37,9 +43,19 @@ describe('parseChatRequest', () => {
     expect(result).toMatchObject({ ok: false, status: 413 });
   });
 
-  it('caps model text too', () => {
-    const body = { messages: [user(), { role: 'model', text: 'y'.repeat(21) }], tools: [] };
-    expect(parseChatRequest(body, limits)).toMatchObject({ ok: false, status: 413 });
+  it('gives model text a larger cap than user text', () => {
+    const fits = { messages: [user(), { role: 'model', text: 'y'.repeat(40) }], tools: [] };
+    expect(parseChatRequest(fits, limits).ok).toBe(true);
+    const tooLong = { messages: [user(), { role: 'model', text: 'y'.repeat(41) }], tools: [] };
+    expect(parseChatRequest(tooLong, limits)).toMatchObject({ ok: false, status: 413 });
+  });
+
+  it('applies the model cap to rawParts text', () => {
+    const rawParts = (length: number) => [{ text: 'z'.repeat(length), thoughtSignature: 'sig' }];
+    const fits = { messages: [user(), { role: 'model', rawParts: rawParts(40) }], tools: [] };
+    expect(parseChatRequest(fits, limits).ok).toBe(true);
+    const tooLong = { messages: [user(), { role: 'model', rawParts: rawParts(41) }], tools: [] };
+    expect(parseChatRequest(tooLong, limits)).toMatchObject({ ok: false, status: 413 });
   });
 
   it('rejects too many tools with 413', () => {
@@ -108,6 +124,21 @@ describe('sanitizeRawParts', () => {
       'text',
     ];
     expect(sanitizeRawParts(parts)).toEqual([]);
+  });
+
+  it('round-trips real Gemini 3 parts unchanged (parallel calls, signature on an empty text part)', () => {
+    const signature = 'CiQB0e2Kb'.repeat(400);
+    const parallelCalls = [
+      {
+        functionCall: { id: 'call-1', name: 'search_products', args: { category: 'cascos', size: 'M' } },
+        thoughtSignature: signature,
+      },
+      { functionCall: { id: 'call-2', name: 'get_cart', args: {} } },
+      { functionCall: { id: 'call-3', name: 'get_active_filters', args: {} } },
+    ];
+    const finalAnswer = [{ text: 'Listo: agregué el casco al carrito.' }, { text: '', thoughtSignature: signature }];
+    expect(sanitizeRawParts(structuredClone(parallelCalls))).toEqual(parallelCalls);
+    expect(sanitizeRawParts(structuredClone(finalAnswer))).toEqual(finalAnswer);
   });
 
   it('returns an empty list for non-arrays', () => {

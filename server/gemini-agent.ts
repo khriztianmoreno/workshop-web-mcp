@@ -6,14 +6,18 @@ import {
   type FunctionDeclaration,
   type GenerateContentResponse,
   type Part,
+  type ThinkingLevel,
 } from '@google/genai';
 import type { ChatMessage, ChatRequest, ChatResponse, FunctionCallPart } from '../shared/agent-protocol';
+import type { ThinkingLevelName } from './config';
 import { SYSTEM_PROMPT } from './system-prompt';
 import { sanitizeRawParts } from './validation';
 
 export interface GeminiAgentOptions {
   /** Hard cap on generated tokens per call (includes thinking tokens). */
   maxOutputTokens: number;
+  /** Optional ThinkingConfig.thinkingLevel; omitted = the model's default. */
+  thinkingLevel?: ThinkingLevelName;
 }
 
 /** Shown when Gemini keeps trying to call a tool the page does not have (e.g. Act 1, zero tools). */
@@ -110,7 +114,7 @@ export function toGeminiContents(messages: ChatMessage[]): Content[] {
   });
 }
 
-export function createGeminiAgent(apiKey: string, model: string, { maxOutputTokens }: GeminiAgentOptions) {
+export function createGeminiAgent(apiKey: string, model: string, { maxOutputTokens, thinkingLevel }: GeminiAgentOptions) {
   const ai = new GoogleGenAI({ apiKey });
 
   return async function geminiAgent(request: ChatRequest): Promise<ChatResponse> {
@@ -129,6 +133,8 @@ export function createGeminiAgent(apiKey: string, model: string, { maxOutputToke
           config: {
             systemInstruction,
             maxOutputTokens,
+            // ThinkingLevel is a string enum; its values match ThinkingLevelName exactly.
+            ...(thinkingLevel ? { thinkingConfig: { thinkingLevel: thinkingLevel as ThinkingLevel } } : {}),
             ...(functionDeclarations.length > 0
               ? { tools: [{ functionDeclarations }] }
               : // Zero tools (Act 1): forbid calls so the model answers in text instead of inventing one.

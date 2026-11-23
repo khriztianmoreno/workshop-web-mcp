@@ -23,6 +23,18 @@ describe('gemini agent', () => {
     expect(typeof request.config.systemInstruction).toBe('string');
   });
 
+  it('sends a thinking level only when configured', async () => {
+    generateContent.mockReset();
+    generateContent.mockResolvedValue({ candidates: [{ content: { parts: [{ text: 'Hola' }] } }], functionCalls: [] });
+    const request = { messages: [{ role: 'user' as const, text: 'hola' }], tools: [] };
+
+    await createGeminiAgent('key', 'gemini-test', { maxOutputTokens: 8192, thinkingLevel: 'LOW' })(request);
+    expect(generateContent.mock.calls[0][0].config.thinkingConfig).toEqual({ thinkingLevel: 'LOW' });
+
+    await createGeminiAgent('key', 'gemini-test', { maxOutputTokens: 8192 })(request);
+    expect(generateContent.mock.calls[1][0].config.thinkingConfig).toBeUndefined();
+  });
+
   it('never forwards client parts outside the model-part allowlist', () => {
     const contents = toGeminiContents([
       {

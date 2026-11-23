@@ -169,10 +169,10 @@ El modelo por defecto es `gemini-3.8-flash` (cámbialo con `GEMINI_MODEL`).
 Para que los asistentes sin clave usen Gemini, el instructor publica el proxy de `main` en internet. Resumen (detalle completo en [`docs/guia-instructor.md`](docs/guia-instructor.md#hostear-el-proxy-para-la-sala)):
 
 - **Clave dedicada** al taller, con **tope de gasto o cuota** en su proyecto. **Revócala** al terminar el evento.
-- `WORKSHOP_TOKEN=<token>`: sin token válido, `/api/chat` responde 401. Sin la variable, el proxy queda abierto (desarrollo local y modo simulado).
+- `WORKSHOP_TOKEN=<token>` (mínimo 24 caracteres; genera uno con `openssl rand -hex 16`): sin token válido, `/api/chat` responde 401, y tras 30 intentos fallidos por minuto desde una IP, 429. Sin la variable, el proxy queda abierto (desarrollo local y modo simulado). El token viaja en la URL: no lo proyectes y rótalo después del evento.
 - `ALLOWED_ORIGINS`: por defecto `http://localhost:5173,http://127.0.0.1:5173`, que es donde los asistentes abren la app. CORS no frena a `curl`: la protección real es el token, los límites y el tope de gasto.
-- `TRUST_PROXY=1` solo si hay un balanceador o proxy inverso delante; así se usa `x-forwarded-for` para el límite por IP. Sin él se usa la IP del socket.
-- Límites: `RATE_LIMIT_PER_MINUTE` (por IP, `60`), `RATE_LIMIT_GLOBAL_PER_MINUTE` (`600`), `MAX_BODY_BYTES` (`65536`), `MAX_OUTPUT_TOKENS` (`4096`) y los topes de `env.example`.
+- `TRUST_PROXY=<N>` solo si hay N proxies inversos delante (balanceador, PaaS); debe ser el número exacto de saltos. Sin él se usa la IP del socket.
+- Límites: con `WORKSHOP_TOKEN`, `RATE_LIMIT_PER_MINUTE` (por IP) es `600` y `RATE_LIMIT_GLOBAL_PER_MINUTE` `1500`, porque toda la sala puede salir por una sola IP (en local: `60` y `600`). `MAX_BODY_BYTES` (`262144`), `MAX_OUTPUT_TOKENS` (`8192`) y los topes de `env.example`.
 
 Los asistentes ponen el token en la ruta, así los tags `acto-1`…`acto-4` funcionan sin tocar código:
 

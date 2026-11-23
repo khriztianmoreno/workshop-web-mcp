@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import type { HttpBindings } from '@hono/node-server';
-import { Hono, type MiddlewareHandler } from 'hono';
+import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
 import type { ChatRequest, ChatResponse, HealthResponse } from '../shared/agent-protocol';
 import type { ServerConfig } from './config';
 import { createGeminiAgent } from './gemini-agent';
 import { mockAgent } from './mock-agent';
-import { clientIpFrom, createRateLimiter, tokensMatch } from './security';
+import { clientIpFrom, createFailureLimiter, createRateLimiter, tokensMatch } from './security';
 import { parseChatRequest } from './validation';
 
 type Agent = (request: ChatRequest) => Promise<ChatResponse> | ChatResponse;
@@ -17,6 +17,8 @@ type AppEnv = { Bindings: Partial<HttpBindings> | undefined; Variables: { reques
 
 const UNAUTHORIZED =
   'Falta el token del taller o no es válido. Revisa AGENT_BASE_URL o VITE_AGENT_URL: deben terminar en /t/<token>.';
+const TOO_MANY_AUTH_FAILURES =
+  'Demasiados intentos con un token inválido desde tu conexión. Corrige el token y espera un minuto.';
 const TOO_MANY_FROM_CLIENT = 'Demasiadas solicitudes desde tu conexión. Espera un minuto e intenta de nuevo.';
 const TOO_MANY_GLOBAL =
   'El proxy del taller está saturado. Espera un minuto e intenta de nuevo, o usa el modo simulado (AGENT_MODE=mock).';
@@ -30,9 +32,31 @@ export function createApp(config: ServerConfig, agentOverride?: Agent) {
   const agent: Agent =
     agentOverride ??
     (config.mode === 'gemini' && config.apiKey
-      ? createGeminiAgent(config.apiKey, config.model, { maxOutputTokens: config.maxOutputTokens })
+      ? createGeminiAgent(config.apiKey, config.model, {
+          maxOutputTokens: config.maxOutputTokens,
+          thinkingLevel: config.thinkingLevel,
+        })
       : mockAgent);
   const limiter = createRateLimiter({ perClient: config.rateLimitPerClient, global: config.rateLimitGlobal });
+  const authFailures = createFailureLimiter({ maxFailures: config.authFailuresPerMinute });
+
+  const clientKey = (c: Context<AppEnv>) =>
+    clientIpFrom({
+      socketAddress: c.env?.incoming?.socket?.remoteAddress,
+      forwardedFor: c.req.header('x-forwarded-for'),
+      trustProxyHops: config.trustProxyHops,
+    });
+
+  /**
+   * In hosted mode, log each client key the first time it is seen, so the instructor can check
+   * before the event that TRUST_PROXY resolves real client IPs (not the load balancer's).
+   */
+  const seenClients = new Set<string>();
+  const noteClient = (key: string) => {
+    if (!config.workshopToken || seenClients.has(key) || seenClients.size >= 1000) return;
+    seenClients.add(key);
+    console.info(`[proxy] new client key: ${key}`);
+  };
 
   const requestId: MiddlewareHandler<AppEnv> = async (c, next) => {
     const id = randomUUID();
@@ -50,20 +74,24 @@ export function createApp(config: ServerConfig, agentOverride?: Agent) {
     const expected = config.workshopToken;
     if (!expected) return next();
     const pathToken = (c.req.param() as Record<string, string | undefined>).token;
-    if (pathToken !== undefined) {
-      return tokensMatch(pathToken, expected) ? next() : c.json({ error: UNAUTHORIZED }, 401);
+    if (pathToken === undefined && c.req.method === 'GET' && c.req.path === '/api/health') return next();
+
+    // Failed attempts are limited per client so the token cannot be brute-forced. A blocked
+    // client is refused before its token is compared, so a lucky guess cannot be confirmed.
+    const client = clientKey(c);
+    if (authFailures.blocked(client)) {
+      c.header('retry-after', '60');
+      return c.json({ error: TOO_MANY_AUTH_FAILURES }, 429);
     }
-    if (c.req.method === 'GET' && c.req.path === '/api/health') return next();
-    const provided = headerToken(c.req.header('authorization'), c.req.header('x-workshop-token'));
-    return tokensMatch(provided, expected) ? next() : c.json({ error: UNAUTHORIZED }, 401);
+    const provided = pathToken ?? headerToken(c.req.header('authorization'), c.req.header('x-workshop-token'));
+    if (tokensMatch(provided, expected)) return next();
+    authFailures.record(client);
+    return c.json({ error: UNAUTHORIZED }, 401);
   };
 
   const rateLimit: MiddlewareHandler<AppEnv> = async (c, next) => {
-    const client = clientIpFrom({
-      socketAddress: c.env?.incoming?.socket?.remoteAddress,
-      forwardedFor: c.req.header('x-forwarded-for'),
-      trustProxyHops: config.trustProxyHops,
-    });
+    const client = clientKey(c);
+    noteClient(client);
     const verdict = limiter.check(client);
     if (verdict === 'ok') return next();
     c.header('retry-after', '60');
