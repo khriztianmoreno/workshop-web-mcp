@@ -42,7 +42,7 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 
 ## Slides de apertura
 
-Abren el Acto 1 (≈15 min) y cubren el ticket, el modelo mental (agente, MCP, WebMCP y su API), la arquitectura del repo, la misión, las reglas y la verificación del entorno. Cada slide tiene notas con guion, tiempo y reloj acumulado.
+Son los primeros **≈9 minutos** del Acto 1 (14 slides) y dejan **≈6 minutos de práctica**. Cubren el ticket, el modelo mental (agente, MCP, WebMCP y su API), la arquitectura del repo, la misión, las reglas y la verificación del entorno. Cada slide tiene notas con guion, tiempo y reloj acumulado.
 
 **Dónde viven:** `slides/` en la rama `main`. Los tags `acto-1`…`final` no las incluyen, así que preséntalas desde la carpeta en `main` (por ejemplo, la misma donde preparas la demo final).
 
@@ -61,8 +61,7 @@ npm run slides                       # abre http://localhost:5173/slides/
 
 - Navega desde la **vista del orador**: la presentación la sigue (mismo navegador, `BroadcastChannel`, sin internet). Si recargas la presentación con la vista del orador abierta, retoma la slide actual.
 - La vista del orador muestra la slide actual, la siguiente, las notas (`slides/notes/<id>.md`), un cronómetro y la hora.
-- **Ruta corta (≈12 min):** salta `mcp`, `lado-agente`, `estado` y `vs-mcp`. El Acto 2 y el Acto 4 introducen las anotaciones y el Acto 5 retoma la comparación con MCP de servidor.
-- Al terminar (`vamos`), pasa a la tienda en `acto-1` y sigue el guion del Acto 1 desde el minuto 2: el ticket y el modelo mental ya se cubrieron en las slides.
+- Al terminar (`vamos`), pasa a la tienda en `acto-1` y sigue el guion del Acto 1 desde el minuto 9. El presupuesto es estricto: si una slide se alarga, recorta en la siguiente, no en la práctica.
 
 ## Desplegar el proxy del instructor
 
@@ -83,11 +82,10 @@ Los asistentes ponen en su `.env`: `AGENT_BASE_URL=https://tu-proxy.example`. Vi
 
 | Min | Qué hacer | Qué decir (ideas clave) |
 | --- | --- | --- |
-| 0–2 | Lee el ticket del "Casco Vulcano Pro" | "El modelo no está fallando: está adivinando porque no ve la página." |
-| 2–4 | Botón **"Acto 1-2 · Cascos ECE"** | Señala que la respuesta suena segura y es falsa. La verdad: solo el Altamira GT-R a 980.000. |
-| 4–8 | Diagrama del modelo mental + experimento en consola (`say_hello`, abortar) | "No hay `unregisterTool`: el ciclo de vida es un `AbortSignal`." |
-| 8–13 | Asistentes escriben `useWebMcpTools` + `get_store_info` | Explica StrictMode: montar → limpiar → montar. |
-| 13–15 | Botón **"Acto 1 · Horario"** | Muestra el brillo en la píldora y la tarjeta de la herramienta. |
+| 0–9 | [Slides de apertura](#slides-de-apertura) (14 slides, guion en las notas) | El ticket, "el modelo no falla: adivina", agente y MCP, WebMCP, `registerTool` + `AbortSignal`, arquitectura, misión y reglas. |
+| 9–10 | Botón **"Acto 1-2 · Cascos ECE"** | Señala que la respuesta suena segura y es falsa. La verdad: solo el Altamira GT-R a 980.000. |
+| 10–14 | Asistentes escriben `useWebMcpTools` + `get_store_info` | Explica StrictMode: montar → limpiar → montar. Quien termine antes: experimento `say_hello` en consola. |
+| 14–15 | Botón **"Acto 1 · Horario"** | Muestra el brillo en la píldora y la tarjeta de la herramienta. |
 
 **Prompt de demo (exacto):**
 

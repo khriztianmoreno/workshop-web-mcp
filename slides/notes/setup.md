@@ -1,15 +1,11 @@
 # Verificación del entorno
 
-**Tiempo:** ~1 min · **Reloj:** 14:00 → 15:00
+**Tiempo:** ~1 min · **Reloj:** 7:30 → 8:30
 
 **Guion:**
-Esto ya debería estar hecho desde el prework. Si no, es ahora. [señalar línea por línea]
-- Node 22.12 o superior: `node -v`.
-- Crear su rama desde `acto-1`.
-- `npm ci` y `cp env.example .env`. La clave de Gemini es opcional.
-- `npm run check` les dice qué falta.
-- `npm run dev` y abren `http://localhost:5173`. [pausa]
-¿Quién tiene la tienda abierta? Manos arriba. [contar a ojo; si son menos de la mitad, da un minuto más y camina]
+Esto ya debería estar hecho desde el prework. [señalar línea por línea, rápido]
+Node 22.12 o superior, su rama desde `acto-1`, `npm ci`, copiar el `.env` (la clave de Gemini es opcional), `npm run check` y `npm run dev`. Abren `http://localhost:5173`. [pausa]
+¿Quién tiene la tienda abierta? Manos arriba. [contar a ojo; si son menos de la mitad, no esperes aquí: arranca el Acto 1 y camina el salón ayudando]
 
 **Antes del evento:** completa repo, proxy y Wi-Fi en `slides/src/talk.ts`; se proyectan tal cual.
 

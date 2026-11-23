@@ -1,16 +1,16 @@
 # ¡A rodar! Acto 1
 
-**Tiempo:** ~30 s · **Reloj:** 15:00 → 15:30
+**Tiempo:** ~30 s · **Reloj:** 8:30 → 9:00
 
 **Guion:**
-Acto 1, quince minutos. La guía es `docs/01-acto-1-incidente.md`.
+Seis minutos de práctica. La guía es `docs/01-acto-1-incidente.md`.
 1. Reproduzcan el incidente con el botón "Acto 1-2 · Cascos ECE". Van a ver al asistente inventar.
 2. Escriban el hook `useWebMcpTools` con `AbortSignal`.
 3. Registren `get_store_info` y agréguenla a `storeTools`.
 4. Verifiquen con el botón "Acto 1 · Horario": la píldora brilla y dice "Ejecutado por agente". [pausa]
 ¡Vamos!
 
-**Ahora:** sal de las slides (Esc o cambia de ventana) a la tienda en `acto-1` y sigue el guion del Acto 1 en `docs/guia-instructor.md` desde el minuto 2 (el ticket y el modelo mental ya se cubrieron aquí).
+**Ahora:** sal de las slides a la tienda en `acto-1` y sigue el guion del Acto 1 en `docs/guia-instructor.md` desde el minuto 9.
 
 **Prompt de demo (exacto, también en `shared/demo-prompts.ts`):**
 

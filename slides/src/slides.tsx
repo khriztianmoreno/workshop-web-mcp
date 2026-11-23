@@ -32,9 +32,10 @@ import { CATCH_UP, REGISTER_TOOL, SETUP } from './snippets';
 import { TALK } from './talk';
 
 /*
- * Opening deck for the 90-minute WebMCP workshop (first part of Act 1).
+ * Opening deck for the 90-minute WebMCP workshop: the first ~9 minutes of
+ * Act 1, so attendees keep ~6 minutes of hands-on time.
  *
- * Arc: the incident (a chatbot that invents) → the concepts (agent, MCP, the
+ * Arc: the incident (a chatbot that invents) → the concepts (agent + MCP, the
  * gap, WebMCP and its API) → how this repo is built → the mission, the rules
  * and the setup → straight into Act 1.
  *
@@ -69,7 +70,7 @@ function IconCard({
 }) {
   return (
     <Box fill={fill} className={`gap-5 ${className}`}>
-      <Icon name={icon} className="h-16 w-16" />
+      <Icon name={icon} className="h-16 w-16 shrink-0" />
       <p className="text-[40px] font-bold leading-tight">{title}</p>
       <div className="text-[30px] leading-snug">{children}</div>
     </Box>
@@ -93,7 +94,7 @@ function Bubble({ from, children }: { from: 'user' | 'bot'; children: ReactNode 
   );
 }
 
-/** Numbered disc used by the step lists (rules, Act 1 tasks). */
+/** Numbered disc used by the step lists (Act 1 tasks). */
 function Step({ n, tone, children }: { n: ReactNode; tone: Tone; children: ReactNode }) {
   return (
     <div className="flex items-center gap-6">
@@ -233,32 +234,19 @@ function AboutMe() {
 
 // ─── The incident ──────────────────────────────────────────────────────────
 
-function Ticket() {
-  return (
-    <Statement label="Lunes, 8:12 a. m. · Llega un ticket de soporte" tone="red">
-      <div className="flex items-start gap-8">
-        <Disc tone="red" icon="support_agent" className="h-32 w-32" />
-        <p className="max-w-[1400px] rounded-[40px] rounded-tl-[8px] border-[3px] border-gde-ink bg-white px-12 py-8 text-[52px] font-bold leading-[1.2] text-gde-ink">
-          “El asistente me recomendó el <Mark tone="red">Casco Vulcano Pro</Mark> a 890.000 en talla M. Lo busqué y no existe.”
-        </p>
-      </div>
-      <p className="text-[40px] text-gde-mist">Rodada · tienda de equipo para motociclistas</p>
-    </Statement>
-  );
-}
-
-function ChatbotMudo() {
+/** The support ticket and the "mute chatbot" in one slide. */
+function Incidente() {
   const blind: { icon: IconName; text: string }[] = [
     { icon: 'storefront', text: 'No ve el catálogo' },
     { icon: 'visibility', text: 'No sabe qué tallas quedan' },
-    { icon: 'touch_app', text: 'No puede hacer nada en la página' },
+    { icon: 'touch_app', text: 'No puede actuar en la página' },
   ];
   return (
-    <Content tone="red" label="El chatbot mudo" title="Un chat que solo habla no puede actuar sobre tu app">
+    <Content tone="red" label="Lunes, 8:12 a. m. · Ticket de soporte" title="El asistente recomendó un casco que no existe">
       <div className="flex flex-1 items-center gap-16">
         <div className="flex flex-1 flex-col gap-8">
           <Bubble from="user">¿Qué cascos ECE hay en talla M por menos de 1.200.000?</Bubble>
-          <Bubble from="bot">¡Claro! Te recomiendo el Casco Vulcano Pro a 890.000…</Bubble>
+          <Bubble from="bot">Te recomiendo el Casco Vulcano Pro a 890.000 en talla M.</Bubble>
         </div>
         <div className="flex w-[560px] flex-col gap-5">
           {blind.map((b) => (
@@ -270,7 +258,7 @@ function ChatbotMudo() {
         </div>
       </div>
       <Scoreboard ok={false} question="¿El cliente recibió una respuesta correcta?">
-        Sonó segura y era falsa: el modelo no falla, adivina.
+        Lo buscó y no existe. El modelo no falla: adivina, porque solo habla.
       </Scoreboard>
     </Content>
   );
@@ -278,73 +266,55 @@ function ChatbotMudo() {
 
 // ─── Concepts ──────────────────────────────────────────────────────────────
 
+/** Agent = model + tools + loop, and MCP as the standard way to ship the tools. */
 function Agente() {
-  const loop = ['Lee el pedido', 'Elige una herramienta', 'La ejecuta', 'Lee el resultado'];
   return (
-    <Content tone="blue" label="Primero, una definición" title="Un agente es un modelo que usa herramientas en un ciclo">
+    <Content tone="blue" label="Primero, dos definiciones" title="Un agente es un modelo que usa herramientas en un ciclo">
       <div className="flex items-center justify-center gap-8">
-        <IconCard icon="psychology" title="Modelo" fill="white" className="w-[420px]">
-          Entiende el pedido y decide qué hacer.
+        <IconCard icon="psychology" title="Modelo" fill="white" className="h-[290px] w-[420px]">
+          Entiende el pedido y decide.
         </IconCard>
         <p aria-hidden className="text-[72px] font-bold">
           +
         </p>
-        <IconCard icon="build" title="Herramientas" fill="blue" className="w-[420px]">
-          Funciones con nombre, descripción y esquema.
+        <IconCard icon="build" title="Herramientas" fill="blue" className="h-[290px] w-[420px]">
+          Funciones con nombre y esquema.
         </IconCard>
         <p aria-hidden className="text-[72px] font-bold">
           +
         </p>
-        <IconCard icon="sync" title="Ciclo" fill="yellow" className="w-[420px]">
-          Repite hasta tener la respuesta.
+        <IconCard icon="sync" title="Ciclo" fill="yellow" className="h-[290px] w-[420px]">
+          Pide, ejecuta, lee, repite.
         </IconCard>
       </div>
-      <div className="flex flex-1 items-center gap-4">
-        {loop.map((step, i) => (
-          <div key={step} className="flex items-center gap-4">
-            <Pill fill={i === 1 ? 'blue' : 'white'} className="px-7 py-3 text-[30px]">
-              {step}
-            </Pill>
-            <Arrow className="w-12" />
-          </div>
-        ))}
-        <Pill fill="ink" className="px-7 py-3 text-[30px]">
-          <Icon name="sync" className="h-8 w-8" />
-          repite
+      <div className="mt-auto flex flex-col gap-4 rounded-[28px] border-[3px] border-gde-ink bg-white px-10 py-6">
+        <p className="text-[34px] font-bold">
+          <Mark tone="blue">MCP</Mark> estandariza las herramientas, en un servidor aparte con su propia auth
+        </p>
+        <div className="flex items-center gap-6">
+        <Pill fill="white" className="px-6 py-2 text-[28px]">
+          <Icon name="smart_toy" className="h-8 w-8" />
+          Cliente
         </Pill>
-      </div>
-    </Content>
-  );
-}
-
-function Mcp() {
-  return (
-    <Content tone="blue" label="MCP · Model Context Protocol" title="Un protocolo para conectar modelos con herramientas">
-      <div className="flex flex-1 items-center gap-8">
-        <IconCard icon="smart_toy" title="Cliente MCP" fill="white" className="h-[360px] flex-1">
-          La app que tiene el modelo: un chat, tu IDE, un agente.
-        </IconCard>
-        <div className="flex flex-col items-center gap-3">
-          <Pill fill="ink" className="px-6 py-2 font-gde-code text-[26px]">
-            tools/list · tools/call
-          </Pill>
+        <div className="flex flex-col items-center">
+          <Tech className="text-[24px] text-gde-soft">tools/list · tools/call</Tech>
           <Arrow className="w-48" />
         </div>
-        <IconCard icon="dns" title="Servidor MCP" fill="blue" className="h-[360px] flex-1">
-          Un proceso aparte que expone herramientas: GitHub, una base de datos, tus archivos.
-        </IconCard>
+        <Pill fill="blue" className="px-6 py-2 text-[28px]">
+          <Icon name="dns" className="h-8 w-8" />
+          Servidor MCP
+        </Pill>
+        </div>
       </div>
-      <p className="text-[36px] font-medium">
-        Hasta hoy, las herramientas vivían <Mark tone="blue">del lado del servidor</Mark>, con su propia autenticación.
-      </p>
     </Content>
   );
 }
 
+/** The app already has everything; ends on the question that introduces WebMCP. */
 function Brecha() {
   const has: { icon: IconName; title: string; fill: BoxFill; body: ReactNode }[] = [
-    { icon: 'storefront', title: 'El estado', fill: 'white', body: <>Catálogo, filtros y carrito ya están en memoria.</> },
-    { icon: 'login', title: 'La sesión', fill: 'yellow', body: <>El usuario ya inició sesión. Sus cookies ya están ahí.</> },
+    { icon: 'storefront', title: 'El estado', fill: 'white', body: <>Catálogo, filtros y carrito ya en memoria.</> },
+    { icon: 'login', title: 'La sesión', fill: 'yellow', body: <>El usuario ya inició sesión.</> },
     {
       icon: 'touch_app',
       title: 'Las acciones',
@@ -358,32 +328,17 @@ function Brecha() {
   ];
   return (
     <Content tone="yellow" label="La brecha" title="Tu app web ya tiene todo lo que el agente necesita">
-      <div className="grid flex-1 grid-cols-3 content-center gap-10">
+      <div className="grid grid-cols-3 gap-10">
         {has.map((h) => (
-          <IconCard key={h.title} icon={h.icon} title={h.title} fill={h.fill} className="h-[340px]">
+          <IconCard key={h.title} icon={h.icon} title={h.title} fill={h.fill} className="h-[290px]">
             {h.body}
           </IconCard>
         ))}
       </div>
-      <p className="text-[38px] font-medium">
-        ¿Por qué construir <Mark tone="red">otra API y otro servidor</Mark> solo para el agente?
-      </p>
+      <h3 className="mt-auto max-w-[1600px] text-balance text-[64px] font-bold leading-[1.1]">
+        ¿Y si la página le diera <Mark tone="yellow">sus propias herramientas</Mark> al agente?
+      </h3>
     </Content>
-  );
-}
-
-function Pregunta() {
-  return (
-    <Frame bg="hero">
-      <Region x={160} y={150} w={1600} h={780} className="justify-center gap-10">
-        <Label tone="blue" className="text-[32px]">
-          La idea
-        </Label>
-        <h1 className="max-w-[1500px] text-balance text-[120px] font-bold leading-[1.05] tracking-tight">
-          ¿Y si la página le diera <Mark tone="yellow">sus propias herramientas</Mark> al agente?
-        </h1>
-      </Region>
-    </Frame>
   );
 }
 
@@ -430,46 +385,29 @@ function QueEs() {
   );
 }
 
-function Anatomia() {
-  const parts: { plain: string; tech: string; example: ReactNode; fill: BoxFill }[] = [
-    { plain: 'Nombre', tech: 'name', example: <Tech>get_store_info</Tech>, fill: 'white' },
-    { plain: 'Para qué sirve', tech: 'description', example: <>Escrita para el modelo, no para humanos</>, fill: 'blue' },
-    { plain: 'Qué datos pide', tech: 'inputSchema', example: <>JSON Schema</>, fill: 'yellow' },
-    { plain: 'Qué hace', tech: 'execute()', example: <>Llama a tu código de siempre</>, fill: 'green' },
-    { plain: 'Cómo tratarla', tech: 'annotations', example: <Tech>readOnlyHint</Tech>, fill: 'red' },
+/** Anatomy of a tool + registration with an AbortSignal, around one code card. */
+function Registro() {
+  const parts: [string, string][] = [
+    ['name', 'Nombre único'],
+    ['description', 'Escrita para el modelo'],
+    ['inputSchema', 'Qué datos pide'],
+    ['execute()', 'Tu código de siempre'],
+    ['annotations', 'Cómo tratarla'],
   ];
   return (
-    <Content tone="green" label="Anatomía" title="Una herramienta tiene cinco partes">
-      <div className="grid flex-1 grid-cols-5 content-center gap-6">
-        {parts.map((p) => (
-          <Box key={p.tech} fill={p.fill} className="h-[400px] justify-between px-8">
-            <p className="text-[40px] font-bold leading-tight">{p.plain}</p>
-            <div className="flex flex-col gap-5">
-              <Pill fill="ink" className="px-5 py-2 font-gde-code text-[26px]">
-                {p.tech}
-              </Pill>
-              <p className="text-[28px] leading-snug">{p.example}</p>
-            </div>
-          </Box>
-        ))}
-      </div>
-    </Content>
-  );
-}
-
-function Registro() {
-  return (
-    <CodeSlide tone="green" label="registerTool(tool, { signal })" title="Registrar y desregistrar con un AbortSignal">
+    <CodeSlide tone="green" label="Anatomía · registerTool(tool, { signal })" title="Cinco partes y un AbortSignal">
       <div className="flex flex-1 gap-10">
         <Code code={REGISTER_TOOL} file="DevTools → Console" dense className="flex-1" />
-        <div className="flex w-[420px] shrink-0 flex-col justify-center gap-8">
-          <Box fill="green" className="gap-3">
-            <p className="text-[32px] font-bold leading-tight">No existe unregisterTool()</p>
-            <p className="text-[28px] leading-snug">Abortar la señal la quita.</p>
-          </Box>
-          <Box fill="yellow" className="gap-3">
-            <p className="text-[32px] font-bold leading-tight">Nombres únicos</p>
-            <p className="text-[28px] leading-snug">Registrar dos veces el mismo nombre lanza un error.</p>
+        <div className="flex w-[460px] shrink-0 flex-col justify-center gap-5">
+          {parts.map(([tech, plain]) => (
+            <div key={tech} className="flex flex-col gap-1">
+              <Tech className={`text-[28px] font-bold ${TEXT_ON_DARK.green}`}>{tech}</Tech>
+              <span className="text-[26px] text-gde-mist">{plain}</span>
+            </div>
+          ))}
+          <Box fill="green" className="mt-2 gap-2 px-8 py-6">
+            <p className="text-[30px] font-bold leading-tight">No existe unregisterTool()</p>
+            <p className="text-[26px] leading-snug">Abortar la señal la quita.</p>
           </Box>
         </div>
       </div>
@@ -477,11 +415,11 @@ function Registro() {
   );
 }
 
+/** Agent side of the API, with the spec status as a compact footer strip. */
 function LadoAgente() {
-  const cols: { title: string; tone: Tone; fill: BoxFill; items: [string, string][] }[] = [
+  const cols: { title: string; fill: BoxFill; items: [string, string][] }[] = [
     {
       title: 'El agente usa',
-      tone: 'blue',
       fill: 'blue',
       items: [
         ['getTools()', 'lista lo registrado'],
@@ -490,7 +428,6 @@ function LadoAgente() {
     },
     {
       title: 'Eventos',
-      tone: 'yellow',
       fill: 'yellow',
       items: [
         ['toolchange', 'cambió la lista'],
@@ -500,7 +437,6 @@ function LadoAgente() {
     },
     {
       title: 'Anotaciones',
-      tone: 'red',
       fill: 'red',
       items: [
         ['readOnlyHint', 'solo lee'],
@@ -509,13 +445,22 @@ function LadoAgente() {
       ],
     },
   ];
+  const status: ReactNode[] = [
+    <>Borrador W3C · 13 nov 2026</>,
+    <>Origin trial · Chrome 149–156</>,
+    <>
+      <Tech>navigator.modelContext</Tech> obsoleto (Chrome 150)
+    </>,
+    <Tech>chrome://flags/#enable-webmcp-testing</Tech>,
+    <>Sin provideContext: solo herramientas</>,
+  ];
   return (
     <Content tone="blue" label="El resto de la API" title="El otro lado: lo que ve y usa el agente">
-      <div className="grid flex-1 grid-cols-3 content-center gap-8">
+      <div className="grid grid-cols-3 gap-8">
         {cols.map((c) => (
-          <Box key={c.title} fill={c.fill} className="h-[460px] gap-6">
-            <p className="text-[40px] font-bold">{c.title}</p>
-            <ul className="flex flex-col gap-5">
+          <Box key={c.title} fill={c.fill} className="gap-4 py-7">
+            <p className="text-[38px] font-bold">{c.title}</p>
+            <ul className="flex flex-col gap-3">
               {c.items.map(([tech, plain]) => (
                 <li key={tech} className="flex flex-col gap-1">
                   <Tech className="text-[28px] font-bold">{tech}</Tech>
@@ -526,68 +471,21 @@ function LadoAgente() {
           </Box>
         ))}
       </div>
-      <p className="text-[32px] font-medium">
-        Nuestra tienda escucha <Tech>toolactivated</Tech> para iluminar lo que toca el agente.
-      </p>
-    </Content>
-  );
-}
-
-function Estado() {
-  const facts: { icon: IconName; title: ReactNode; body: ReactNode; fill: BoxFill }[] = [
-    {
-      icon: 'menu_book',
-      title: 'Borrador del W3C',
-      body: <>WebML Community Group, 13 de noviembre de 2026.</>,
-      fill: 'white',
-    },
-    {
-      icon: 'api',
-      title: <Tech>document.modelContext</Tech>,
-      body: (
-        <>
-          <Tech>navigator.modelContext</Tech> está obsoleto desde Chrome 150.
-        </>
-      ),
-      fill: 'blue',
-    },
-    {
-      icon: 'flag',
-      title: 'Origin trial',
-      body: (
-        <>
-          Chrome 149–156. En local: <Tech>#enable-webmcp-testing</Tech>
-        </>
-      ),
-      fill: 'yellow',
-    },
-    {
-      icon: 'close',
-      title: 'Solo herramientas',
-      body: (
-        <>
-          <Tech>provideContext</Tech> y los recursos se eliminaron.
-        </>
-      ),
-      fill: 'red',
-    },
-  ];
-  return (
-    <Content tone="yellow" label="Con honestidad" title="WebMCP todavía es experimental">
-      <div className="grid flex-1 grid-cols-2 content-center gap-8">
-        {facts.map((f, i) => (
-          <Box key={i} fill={f.fill} className="flex-row items-center gap-8">
-            <Icon name={f.icon} className="h-16 w-16 shrink-0" />
-            <div className="flex flex-col gap-2">
-              <p className="text-[36px] font-bold leading-tight">{f.title}</p>
-              <p className="text-[28px] leading-snug">{f.body}</p>
-            </div>
-          </Box>
-        ))}
+      <div className="mt-auto flex flex-col gap-4">
+        <Label tone="yellow" className="text-[26px]">
+          Estado: experimental
+        </Label>
+        <div className="flex flex-wrap gap-3">
+          {status.map((s, i) => (
+            <Pill key={i} fill="white" className="px-6 py-2 text-[24px]">
+              {s}
+            </Pill>
+          ))}
+          <Pill fill="green" className="px-6 py-2 text-[24px]">
+            Polyfill incluido: sin flags
+          </Pill>
+        </div>
       </div>
-      <p className="text-[32px] font-medium">
-        Hoy no necesitas la flag: el taller trae un <Mark tone="green">polyfill</Mark> con la forma de la especificación.
-      </p>
     </Content>
   );
 }
@@ -701,68 +599,57 @@ function Arquitectura() {
   );
 }
 
+/** The five acts (timeline) + the rules of the game (tag catch-up). */
 function Mision() {
-  const acts: { n: string; name: string; min: string; tag: string; goal: string; tone: Tone }[] = [
-    { n: '1', name: 'El incidente', min: "15'", tag: 'acto-1', goal: 'Tu primera herramienta', tone: 'red' },
-    { n: '2', name: 'Darle ojos', min: "25'", tag: 'acto-2', goal: 'Herramientas de lectura', tone: 'blue' },
-    { n: '3', name: 'Darle manos', min: "30'", tag: 'acto-3', goal: 'Herramientas de escritura', tone: 'green' },
-    { n: '4', name: 'El sabotaje', min: "15'", tag: 'acto-4', goal: 'Defensa en profundidad', tone: 'red' },
-    { n: '5', name: 'Cierre', min: "5'", tag: 'final', goal: 'Producción y próximos pasos', tone: 'yellow' },
+  const acts: { n: string; name: string; min: string; tag: string; tone: Tone }[] = [
+    { n: '1', name: 'El incidente', min: "15'", tag: 'acto-1', tone: 'red' },
+    { n: '2', name: 'Darle ojos', min: "25'", tag: 'acto-2', tone: 'blue' },
+    { n: '3', name: 'Darle manos', min: "30'", tag: 'acto-3', tone: 'green' },
+    { n: '4', name: 'El sabotaje', min: "15'", tag: 'acto-4', tone: 'red' },
+    { n: '5', name: 'Cierre', min: "5'", tag: 'final', tone: 'yellow' },
+  ];
+  const rules: { icon: IconName; text: ReactNode }[] = [
+    { icon: 'menu_book', text: <>Guías en <Tech>docs/</Tech>, una por acto</> },
+    { icon: 'group', text: <>¿Atascado? Levanta la mano</> },
+    { icon: 'wifi_off', text: <>¿Sin clave o sin red? Modo simulado</> },
   ];
   return (
-    <Content bg="hero" tone="red" label="La misión" title="Cinco actos para pasar de un chatbot que inventa a un agente útil y seguro">
-      <div className="grid flex-1 grid-cols-5 content-center gap-6">
+    <Content bg="hero" tone="red" label="La misión · 90 minutos" title="Cinco actos. Nadie se queda atrás.">
+      <div className="grid grid-cols-5 gap-6">
         {acts.map((a) => (
-          <Box key={a.n} fill="white" className="h-[400px] justify-between px-7">
+          <Box key={a.n} fill="white" className="h-[230px] justify-between px-7 py-6">
             <div className="flex items-center justify-between">
               <span
-                className={`flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-gde-ink text-[32px] font-bold ${SOLID[a.tone]} ${
+                className={`flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-gde-ink text-[28px] font-bold ${SOLID[a.tone]} ${
                   a.tone === 'yellow' ? 'text-gde-ink' : 'text-white'
                 }`}
               >
                 {a.n}
               </span>
-              <p className="font-gde-code text-[36px] font-bold tabular-nums">{a.min}</p>
+              <p className="font-gde-code text-[32px] font-bold tabular-nums">{a.min}</p>
             </div>
-            <p className="text-[36px] font-bold leading-tight">{a.name}</p>
-            <p className="text-[26px] leading-snug text-gde-soft">{a.goal}</p>
+            <p className="text-[34px] font-bold leading-tight">{a.name}</p>
             <Pill fill="ink" className="px-5 py-1 font-gde-code text-[24px]">
               {a.tag}
             </Pill>
           </Box>
         ))}
       </div>
-    </Content>
-  );
-}
-
-function Dinamica() {
-  return (
-    <CodeSlide tone="yellow" label="Reglas del juego" title="Cada acto termina a tiempo. Nadie se queda atrás.">
-      <div className="flex flex-1 gap-12">
-        <div className="flex flex-1 flex-col justify-center gap-8">
-          <Step n="1" tone="blue">
-            Cada <b>tag</b> es el punto de partida de un acto y la solución del anterior.
-          </Step>
-          <Step n="2" tone="green">
-            ¿Te quedaste atrás? Guarda tu avance y salta al tag siguiente.
-          </Step>
-          <Step n="3" tone="yellow">
-            Las guías están en <Tech>docs/</Tech>: una por acto, con la solución plegada.
-          </Step>
-          <Step n="4" tone="red">
-            ¿Atascado? Levanta la mano o trabaja con tu vecino.
-          </Step>
-          <Step n="5" tone="blue">
-            ¿Sin clave o sin Wi-Fi? <b>Modo simulado</b>: el taller funciona igual.
-          </Step>
+      <div className="mt-auto flex items-stretch gap-8">
+        <div className="flex flex-1 flex-col gap-3">
+          <p className="text-[30px] font-bold">Cada tag es el inicio de un acto. ¿Te quedaste atrás? Salta:</p>
+          <Code code={CATCH_UP} lang="sh" compact />
         </div>
-        <div className="flex w-[760px] shrink-0 flex-col justify-center gap-6">
-          <Code code={CATCH_UP} lang="sh" file="Ponerse al día" compact />
-          <Code code={'npm run server:mock   # agente simulado, sin red'} lang="sh" file="Plan B" compact />
+        <div className="flex w-[560px] shrink-0 flex-col justify-end gap-4">
+          {rules.map((r, i) => (
+            <Pill key={i} fill="white" className="justify-start px-6 py-2 text-[26px]">
+              <Icon name={r.icon} className="h-8 w-8" />
+              {r.text}
+            </Pill>
+          ))}
         </div>
       </div>
-    </CodeSlide>
+    </Content>
   );
 }
 
@@ -794,7 +681,7 @@ function Vamos() {
       <Region x={160} y={120} w={1600} h={840} className="justify-between">
         <div className="flex items-center gap-6">
           <Label tone="red" className="text-[32px]">
-            Acto 1 · El incidente · 15 min
+            Acto 1 · Manos a la obra · 6 min
           </Label>
           <Pill fill="ink" className="px-6 py-2 font-gde-code text-[26px]">
             docs/01-acto-1-incidente.md
@@ -837,24 +724,18 @@ const DECK: DeckSlide[] = [
   { id: 'cover', Component: Cover, title: 'Misión: El Checkout Roto' },
   { id: 'about-me', Component: AboutMe, title: 'Quién les habla' },
   // The incident
-  { id: 'ticket', Component: Ticket, title: 'El ticket del Casco Vulcano Pro', section: INCIDENTE },
-  { id: 'chatbot-mudo', Component: ChatbotMudo, title: 'El chatbot mudo ❌', section: INCIDENTE },
+  { id: 'incidente', Component: Incidente, title: 'El incidente: un casco que no existe ❌', section: INCIDENTE },
   // Concepts
-  { id: 'agente', Component: Agente, title: 'Qué es un agente', section: CONCEPTOS },
-  { id: 'mcp', Component: Mcp, title: 'Qué es MCP', section: CONCEPTOS },
-  { id: 'brecha', Component: Brecha, title: 'La brecha: la app ya lo tiene todo', section: CONCEPTOS },
-  { id: 'pregunta', Component: Pregunta, title: '¿Y si la página diera las herramientas?', section: WEBMCP },
+  { id: 'agente', Component: Agente, title: 'Agente y MCP', section: CONCEPTOS },
+  { id: 'brecha', Component: Brecha, title: 'La brecha y la pregunta', section: CONCEPTOS },
   { id: 'que-es', Component: QueEs, title: 'Qué es WebMCP', section: WEBMCP },
-  { id: 'anatomia', Component: Anatomia, title: 'Anatomía de una herramienta', section: WEBMCP },
-  { id: 'registro', Component: Registro, title: 'registerTool + AbortSignal', section: WEBMCP },
-  { id: 'lado-agente', Component: LadoAgente, title: 'getTools, eventos y anotaciones', section: WEBMCP },
-  { id: 'estado', Component: Estado, title: 'Estado de la especificación', section: WEBMCP },
+  { id: 'registro', Component: Registro, title: 'Anatomía + registerTool', section: WEBMCP },
+  { id: 'lado-agente', Component: LadoAgente, title: 'Lado del agente + estado', section: WEBMCP },
   { id: 'vs-mcp', Component: VsMcp, title: 'WebMCP vs. MCP de servidor', section: WEBMCP },
   { id: 'seguridad', Component: Seguridad, title: 'Avance: inyección de prompts', section: WEBMCP },
   // The workshop
   { id: 'arquitectura', Component: Arquitectura, title: 'Arquitectura del taller', section: TALLER },
-  { id: 'mision', Component: Mision, title: 'La misión: cinco actos', section: TALLER },
-  { id: 'dinamica', Component: Dinamica, title: 'Reglas del juego', section: TALLER },
+  { id: 'mision', Component: Mision, title: 'La misión y las reglas', section: TALLER },
   { id: 'setup', Component: Setup, title: 'Verificación del entorno', section: TALLER },
   { id: 'vamos', Component: Vamos, title: '¡A rodar! Acto 1' },
 ];

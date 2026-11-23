@@ -1,14 +1,15 @@
-# La misión
+# La misión y las reglas
 
-**Tiempo:** ~45 s · **Reloj:** 12:15 → 13:00
+**Tiempo:** ~50 s · **Reloj:** 6:40 → 7:30
 
 **Guion:**
-Cinco actos, 90 minutos. [recorrer las tarjetas]
-- **Acto 1 · El incidente (15'):** reproducen el problema y registran su primera herramienta.
-- **Acto 2 · Darle ojos (25'):** herramientas de lectura. El agente deja de inventar.
-- **Acto 3 · Darle manos (30'):** herramientas de escritura que reutilizan las acciones de la UI. Cierra con el "prompt jefe".
-- **Acto 4 · El sabotaje (15'):** alguien ataca a su agente y ustedes lo defienden.
-- **Acto 5 · Cierre (5'):** producción y próximos pasos. [pausa]
-Debajo de cada acto está su tag de git. Eso es lo siguiente.
+Cinco actos, 90 minutos. [recorrer la fila rápido]
+Incidente: su primera herramienta. Ojos: herramientas de lectura. Manos: herramientas de escritura. Sabotaje: alguien ataca a su agente. Cierre: producción. [pausa]
+Regla de oro: **cada acto termina a tiempo**. Debajo de cada acto está su tag de git, que es el punto de partida del acto y la solución del anterior. ¿Te quedaste atrás? Guardas tu avance y saltas con `git switch -c mi-acto-N acto-N`. [señalar el bloque]
+Las guías están en `docs/`. Si se atascan, levanten la mano o trabajen con su vecino. Sin clave o sin Wi-Fi: Modo simulado, el taller funciona igual.
 
-**Transición:** "Para que nadie se quede atrás, hay reglas."
+**Tip:** para validar su solución con las pruebas reales del acto: `git checkout acto-2 -- src/webmcp/tools/acto-1.test.ts && npm test`.
+
+**Dilo al cierre de cada acto:** "Quien no terminó, salta al tag siguiente."
+
+**Transición:** "Revisemos que todos tengan el entorno listo."

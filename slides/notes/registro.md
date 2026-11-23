@@ -1,15 +1,18 @@
-# registerTool y AbortSignal
+# Anatomía + registerTool
 
-**Tiempo:** ~1 min · **Reloj:** 7:45 → 8:45
+**Tiempo:** ~50 s · **Reloj:** 3:40 → 4:30
 
 **Guion:**
-Esto lo pueden pegar en la consola de la tienda. [señalar el bloque]
-`registerTool` recibe la herramienta y, como segundo argumento, un `signal`.
-Y abajo, lo más importante de toda la slide: **no existe `unregisterTool()`**. Para quitar una herramienta, abortas la señal. [pausa]
-Segunda regla: los nombres son únicos. Si registras dos veces `get_store_info`, la especificación lanza un error.
+Una herramienta tiene cinco partes. [señalar la columna derecha mientras recorres el código]
+- `name`: único, en snake_case y sin tildes.
+- `description`: **para el modelo, no para humanos**. Es lo que más influye en que la elija bien.
+- `inputSchema`: JSON Schema de lo que recibe.
+- `execute()`: tu código de siempre.
+- `annotations`: pistas como `readOnlyHint`. [pausa]
+Y lo más importante de la slide: **no existe `unregisterTool()`**. Pasas un `signal` y, para quitarla, abortas el controller. Registrar dos veces el mismo nombre lanza un error.
 
-**Por qué importa (adelanto del Acto 1):** React StrictMode monta, limpia y vuelve a montar. Sin `controller.abort()` en la limpieza, el segundo montaje revienta con "already registered". Eso es exactamente lo que van a resolver en `useWebMcpTools`.
+**Por qué importa (lo van a escribir en 6 minutos):** React StrictMode monta, limpia y vuelve a montar. Sin `controller.abort()` en la limpieza, el segundo montaje revienta con "already registered".
 
-**Tip:** si hay tiempo, haz el experimento `say_hello` de `docs/01-acto-1-incidente.md` en vivo: el panel pasa de 0 a 1 herramienta y vuelve a 0 con `abort()`.
+**Dato del repo:** las descripciones van en inglés porque son contrato técnico; el `title` visible en el panel va en español.
 
-**Transición:** "Eso es lo que hace la página. ¿Y qué ve el agente?"
+**Transición:** "Eso hace la página. ¿Qué ve el agente?"

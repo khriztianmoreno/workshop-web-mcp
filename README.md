@@ -53,7 +53,7 @@ npm run dev                      # abre http://localhost:5173
 
 ## Slides de apertura
 
-Las slides que proyecta el instructor al inicio (≈15 min: el incidente, los conceptos y la dinámica del taller) viven en `slides/`, en la rama `main` (no en los tags de los actos).
+Las slides que proyecta el instructor al inicio (los primeros ≈9 min del Acto 1: el incidente, los conceptos y la dinámica del taller) viven en `slides/`, en la rama `main` (no en los tags de los actos).
 
 | URL (con `npm run dev` corriendo) | Qué es |
 | --- | --- |

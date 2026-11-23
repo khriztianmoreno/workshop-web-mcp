@@ -2,7 +2,7 @@
 
 | Duración | Tag de inicio | Tag de solución |
 | --- | --- | --- |
-| **15 minutos** | `acto-1` | `acto-2` |
+| **15 minutos** (≈9 de slides de apertura + ≈6 de práctica) | `acto-1` | `acto-2` |
 
 **Objetivo:** entender por qué el asistente inventa y registrar tu **primera herramienta WebMCP** de forma correcta (con `AbortSignal` y compatible con StrictMode).
 
@@ -16,7 +16,7 @@ Lunes, 8:12 a. m. Llega un ticket de soporte:
 
 El asistente funciona: el modelo responde rápido y con seguridad. El problema es otro: **no ve la página**. No sabe qué hay en el catálogo, qué tallas quedan ni cuánto cuesta el envío. Así que adivina.
 
-## 1. Reproduce el incidente (3 min)
+## 1. Reproduce el incidente (1 min)
 
 ```bash
 npm run dev
@@ -32,7 +32,9 @@ npm run dev
 
 **Esperado:** una respuesta segura y específica… sobre productos que no existen. La respuesta correcta es solo **Casco integral Altamira GT-R, 980.000 COP**. (El Nimbo Sport cumple todo, salvo que la talla M está agotada.)
 
-## 2. El modelo mental (4 min)
+## 2. El modelo mental (visto en las slides de apertura)
+
+> Queda aquí como referencia: no le dediques tiempo de práctica.
 
 Un **chatbot** solo tiene el texto de la conversación. Un **agente** tiene herramientas. WebMCP permite que **la página** le entregue herramientas al agente que la está usando.
 
@@ -81,7 +83,7 @@ await document.modelContext.registerTool(
 controller.abort(); // Y vuelve a 0.
 ```
 
-## 3. Escribe el hook de registro (4 min)
+## 3. Escribe el hook de registro (3 min)
 
 Archivo: `src/webmcp/useWebMcpTools.ts`
 
@@ -120,7 +122,7 @@ limpieza  → A.abort()  → la herramienta desaparece      ✔
 montaje   → registerTool(get_store_info, signal B)     ✔ (sin duplicado)
 ```
 
-## 4. Tu primera herramienta: `get_store_info` (3 min)
+## 4. Tu primera herramienta: `get_store_info` (2 min)
 
 Archivo: `src/webmcp/tools/get-store-info.ts`
 

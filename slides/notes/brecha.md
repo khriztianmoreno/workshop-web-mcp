@@ -1,13 +1,10 @@
-# La brecha
+# La brecha y la pregunta
 
-**Tiempo:** ~45 s · **Reloj:** 5:00 → 5:45
+**Tiempo:** ~30 s · **Reloj:** 2:30 → 3:00
 
 **Guion:**
-Nuestra app web ya tiene todo lo que el agente necesita. [señalar cada tarjeta]
-**El estado**: el catálogo, los filtros, el carrito ya están en memoria.
-**La sesión**: el usuario ya inició sesión, sus cookies ya están ahí.
-**Las acciones**: el botón "Agregar al carrito" ya llama a `addToCart()`. [pausa]
-Si quisiéramos un servidor MCP para la tienda, tendríamos que duplicar lógica, rehacer la autenticación y sincronizar estado que ya existe en la pestaña.
-¿Por qué construir otra API solo para el agente?
+Nuestra app web ya tiene todo lo que el agente necesita: el estado en memoria, la sesión del usuario y las acciones que ya disparan los botones. [señalar cada tarjeta]
+Un servidor MCP para la tienda nos obligaría a duplicar lógica, rehacer la autenticación y sincronizar estado que ya está en la pestaña. [pausa]
+[leer la pregunta de abajo] ¿Y si la página le diera sus propias herramientas al agente?
 
-**Transición:** [avanzar sin decir nada y dejar que lean la pregunta]
+**Transición:** "Esa es exactamente la idea de WebMCP."

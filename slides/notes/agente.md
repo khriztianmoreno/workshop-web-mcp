@@ -1,16 +1,14 @@
-# Qué es un agente
+# Agente y MCP
 
-**Tiempo:** ~1 min · **Reloj:** 3:15 → 4:15
+**Tiempo:** ~50 s · **Reloj:** 1:40 → 2:30
 
 **Guion:**
-Un agente es tres cosas juntas. [señalar cada tarjeta]
-Un **modelo**, que entiende el pedido y decide.
-**Herramientas**: funciones con nombre, descripción y un esquema de entrada.
-Y un **ciclo**: el modelo pide una herramienta, alguien la ejecuta, el resultado vuelve al modelo, y se repite hasta tener la respuesta. [recorrer la fila de abajo]
-El modelo nunca ejecuta nada él mismo: solo pide. Quien ejecuta es el código que corre el ciclo.
+Un agente es tres cosas: un **modelo** que decide, **herramientas** (funciones con nombre y esquema) y un **ciclo**: pide una herramienta, alguien la ejecuta, el resultado vuelve al modelo, y repite. [pausa]
+El modelo nunca ejecuta nada: solo pide. Quien ejecuta es el código que corre el ciclo.
+[señalar la franja de abajo] ¿Y de dónde salen las herramientas? Lo más popular hoy es **MCP**: un protocolo estándar. Un cliente pregunta `tools/list` y llama `tools/call` a un **servidor MCP**, un proceso aparte con su propia autenticación.
 
-**Dato del repo:** en nuestro panel ese ciclo vive en `src/agent/agent-loop.ts` y corta en 8 pasos (`MAX_AGENT_STEPS`).
+**Si el público ya lo sabe:** "Esto es function calling y MCP; lo interesante es *dónde* viven las herramientas." Y avanza.
 
-**Si el público ya lo sabe (termómetro):** "Esto ya lo conocen: function calling. La pregunta interesante es *de dónde salen las herramientas*." Y avanza.
+**Dato del repo:** nuestro ciclo vive en `src/agent/agent-loop.ts` y corta en 8 pasos (`MAX_AGENT_STEPS`).
 
-**Transición:** "¿Y de dónde salen hoy las herramientas? La respuesta más popular se llama MCP."
+**Transición:** "Ahora piensen en una tienda web…"

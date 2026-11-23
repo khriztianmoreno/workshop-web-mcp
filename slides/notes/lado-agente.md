@@ -1,15 +1,13 @@
-# El otro lado de la API
+# Lado del agente + estado de la especificación
 
-**Tiempo:** ~45 s · **Reloj:** 8:45 → 9:30
+**Tiempo:** ~40 s · **Reloj:** 4:30 → 5:10
 
 **Guion:**
-Tres grupos. [señalar cada columna]
-**El agente usa** `getTools()` para listar lo registrado y `executeTool()` para ejecutar. Así funciona nuestro panel de chat.
-**Eventos**: `toolchange` cuando cambia la lista, `toolactivated` cuando el agente usa una, `toolcancel` cuando se cancela. La tienda escucha `toolactivated` para iluminar lo que toca el agente: lo van a ver brillar.
-**Anotaciones**: `readOnlyHint` (solo lee), `untrustedContentHint` (devuelve texto de terceros) y `consequentialHint` (tiene consecuencias, como pagar).
+El agente usa `getTools()` y `executeTool()`: así funciona nuestro panel.
+Hay tres eventos; el que van a ver es `toolactivated`: la tienda lo escucha para iluminar lo que toca el agente.
+Y tres anotaciones: solo lee, devuelve texto ajeno, tiene consecuencias. Son **pistas, no controles**. [pausa]
+[señalar la franja de abajo, sin leerla entera] Seamos honestos: es experimental. Borrador del W3C del 13 de noviembre de 2026, origin trial de Chrome 149 a 156, y si ven `navigator.modelContext` en código viejo, está obsoleto desde Chrome 150. Hoy no necesitan la flag: el repo trae un polyfill.
 
-**Ojo:** son *hints*. Pistas para el agente, no controles de seguridad. Lo retomamos en el Acto 4.
+**Dato del repo:** la consola muestra `[webmcp] mode: polyfill`, `native` o `native-wrapped` (`src/webmcp/polyfill.ts`). Solo funciona en contextos seguros: `https://` o `localhost`. `provideContext` y los recursos se eliminaron de la especificación.
 
-**Ruta corta:** se puede saltar; el Acto 2 introduce `readOnlyHint` y el Acto 4 las otras dos.
-
-**Transición:** "Antes de seguir, seamos honestos con el estado de todo esto."
+**Transición:** "¿Entonces WebMCP reemplaza a MCP? No."
