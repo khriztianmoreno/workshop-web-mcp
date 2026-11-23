@@ -1,5 +1,6 @@
 import '@fontsource-variable/google-sans';
 import '@fontsource-variable/google-sans-code';
+import '@fontsource-variable/roboto-mono';
 import '@khriztianmoreno/speaker-kit/styles.css';
 import './deck.css';
 import { SpeakerView } from '@khriztianmoreno/speaker-kit';

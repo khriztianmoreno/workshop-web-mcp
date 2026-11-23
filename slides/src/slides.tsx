@@ -9,7 +9,6 @@ import {
   Arrow,
   Box,
   type BoxFill,
-  CodeSlide,
   Content,
   Disc,
   Frame,
@@ -21,11 +20,11 @@ import {
   Region,
   Scoreboard,
   type Section,
+  EVENT_LOCATION,
   SlideMeta,
-  SOLID,
+  NumberDisc,
   Statement,
   Tech,
-  TEXT_ON_DARK,
   type Tone,
 } from './primitives';
 import { CATCH_UP, REGISTER_TOOL, SETUP } from './snippets';
@@ -84,8 +83,8 @@ function Bubble({ from, children }: { from: 'user' | 'bot'; children: ReactNode 
     <div className={`flex items-start gap-6 ${user ? '' : 'flex-row-reverse'}`}>
       <Disc tone={user ? 'yellow' : 'blue'} icon={user ? 'person' : 'smart_toy'} className="h-24 w-24" />
       <p
-        className={`rounded-[36px] border-[3px] border-gde-ink px-10 py-6 text-[34px] font-medium leading-snug ${
-          user ? 'rounded-tl-[8px] bg-white text-gde-ink' : 'rounded-tr-[8px] bg-gde-ink text-white'
+        className={`rounded-[36px] border-[3px] border-df-ink px-10 py-6 text-[34px] font-medium leading-snug ${
+          user ? 'rounded-tl-[8px] bg-white text-df-ink' : 'rounded-tr-[8px] bg-df-ink text-df-offwhite'
         }`}
       >
         {children}
@@ -98,13 +97,7 @@ function Bubble({ from, children }: { from: 'user' | 'bot'; children: ReactNode 
 function Step({ n, tone, children }: { n: ReactNode; tone: Tone; children: ReactNode }) {
   return (
     <div className="flex items-center gap-6">
-      <span
-        className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-[3px] border-gde-ink text-[32px] font-bold ${SOLID[tone]} ${
-          tone === 'yellow' ? 'text-gde-ink' : 'text-white'
-        }`}
-      >
-        {n}
-      </span>
+      <NumberDisc n={n} tone={tone} />
       <div className="text-[32px] leading-snug">{children}</div>
     </div>
   );
@@ -114,36 +107,30 @@ function Step({ n, tone, children }: { n: ReactNode; tone: Tone; children: React
 
 function Cover() {
   return (
-    <Frame bg="hero">
-      <Region x={160} y={120} w={1600} h={840} className="justify-between">
-        <div className="flex items-center gap-4">
-          <Pill fill="white">{TALK.event}</Pill>
-          <Pill fill="yellow">{TALK.date}</Pill>
-          <Pill fill="ink">
-            <Icon name="timer" className="h-8 w-8" />
-            {TALK.duration}
-          </Pill>
-        </div>
-        <div className="flex flex-col gap-8">
-          <Label tone="red" className="text-[36px]">
-            Taller · {TALK.subtitle}
-          </Label>
-          <h1 className="text-[150px] font-bold leading-[1] tracking-tight">
-            Misión:
-            <br />
-            El <Mark tone="red">Checkout</Mark> Roto
-          </h1>
-          <p className="max-w-[1300px] text-[44px] font-medium leading-tight text-gde-soft">
-            Dale ojos y manos a un agente de IA dentro de tu propia página, con <Tech>document.modelContext</Tech>
-          </p>
-        </div>
-        <div className="flex items-end justify-between">
-          <div className="flex flex-col gap-4">
-            <p className="text-[40px] font-bold">{TALK.speaker}</p>
-            <p className="font-gde-code text-[30px] text-gde-soft">{TALK.handle}</p>
-          </div>
-          <GdeLogo />
-        </div>
+    <Frame bg="title">
+      {/* Upper-right panel: x 672–1844, y 79–348. */}
+      <Region x={740} y={79} w={1040} h={269} className="justify-center gap-4">
+        <p className="text-[40px] font-medium leading-tight">
+          Dale ojos y manos a un agente de IA dentro de tu propia página
+        </p>
+        <p className="font-df-mono text-[26px] font-light text-df-soft">
+          {['Taller · ' + TALK.duration, 'WebMCP', 'document.modelContext'].join('  ·  ')}
+        </p>
+      </Region>
+      {/* Lower panel: x 75–1844, y 348–1003 (GDG logo notch bottom-right). */}
+      <Region x={167} y={400} w={1563}>
+        <h1 className="text-balance text-[120px] font-bold leading-[1.02] tracking-tight">
+          Misión: El <Mark tone="red">Checkout</Mark> Roto
+        </h1>
+        <p className="mt-6 font-df-mono text-[40px] font-light">{TALK.subtitle}</p>
+      </Region>
+      <Region x={171} y={786} w={1100} className="gap-2">
+        <p className="font-df-mono text-[36px] font-light">
+          {TALK.speaker} · {TALK.handle}
+        </p>
+        <p className="font-df-mono text-[26px] font-light text-df-soft">
+          GDE Web Technologies · DevFest {EVENT_LOCATION} · {TALK.date}
+        </p>
       </Region>
     </Frame>
   );
@@ -159,7 +146,7 @@ function PhotoCarousel({ images }: { images: string[] }) {
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-[32px] border-[3px] border-gde-ink bg-gde-pastel-blue"
+      className="relative w-full overflow-hidden rounded-[32px] border-[3px] border-df-ink bg-df-pastel-blue"
       style={{ aspectRatio: '3/4' }}
     >
       {images.map((src, i) => (
@@ -203,12 +190,12 @@ function AboutMe() {
         <Label tone="blue">¿Quién los acompaña hoy?</Label>
         <div>
           <h1 className="text-[88px] font-bold leading-none">{TALK.speaker}</h1>
-          <p className="mt-4 font-gde-code text-[32px] text-gde-soft">{TALK.handle}</p>
+          <p className="mt-4 font-df-code text-[32px] text-df-soft">{TALK.handle}</p>
         </div>
         <dl className="flex flex-col gap-4">
           {items.map((item) => (
             <div key={item.label} className="flex items-baseline gap-6">
-              <dt className="w-56 shrink-0 font-gde-code text-[26px] text-gde-soft">{item.label}</dt>
+              <dt className="w-56 shrink-0 font-df-code text-[26px] text-df-soft">{item.label}</dt>
               <dd className="text-[32px]">{item.value}</dd>
             </div>
           ))}
@@ -223,9 +210,9 @@ function AboutMe() {
       </Region>
       <Region x={1400} y={130} w={360} className="gap-4">
         <PhotoCarousel images={[photoPortrait, photoStage]} />
-        <div className="flex flex-col items-center gap-3 rounded-[24px] border-[3px] border-gde-ink bg-gde-ink py-5">
+        <div className="flex flex-col items-center gap-3 rounded-[24px] border-[3px] border-df-ink bg-df-ink py-5">
           <img src={siteLogo} alt="" className="h-10 w-auto" />
-          <p className="font-gde-code text-[24px] text-gde-mist">{TALK.site}</p>
+          <p className="font-df-code text-[24px] text-df-soft">{TALK.site}</p>
         </div>
       </Region>
     </Frame>
@@ -270,26 +257,26 @@ function Incidente() {
 function Agente() {
   return (
     <Content tone="blue" label="Primero, dos definiciones" title="Un agente es un modelo que usa herramientas en un ciclo">
-      <div className="flex items-center justify-center gap-8">
-        <IconCard icon="psychology" title="Modelo" fill="white" className="h-[290px] w-[420px]">
+      <div className="flex items-stretch justify-center gap-8">
+        <IconCard icon="psychology" title="Modelo" fill="white" className="w-[420px]">
           Entiende el pedido y decide.
         </IconCard>
-        <p aria-hidden className="text-[72px] font-bold">
+        <p aria-hidden className="self-center text-[72px] font-bold">
           +
         </p>
-        <IconCard icon="build" title="Herramientas" fill="blue" className="h-[290px] w-[420px]">
+        <IconCard icon="build" title="Herramientas" fill="blue" className="w-[420px]">
           Funciones con nombre y esquema.
         </IconCard>
-        <p aria-hidden className="text-[72px] font-bold">
+        <p aria-hidden className="self-center text-[72px] font-bold">
           +
         </p>
-        <IconCard icon="sync" title="Ciclo" fill="yellow" className="h-[290px] w-[420px]">
+        <IconCard icon="sync" title="Ciclo" fill="yellow" className="w-[420px]">
           Pide, ejecuta, lee, repite.
         </IconCard>
       </div>
-      <div className="mt-auto flex flex-col gap-4 rounded-[28px] border-[3px] border-gde-ink bg-white px-10 py-6">
-        <p className="text-[34px] font-bold">
-          <Mark tone="blue">MCP</Mark> estandariza las herramientas, en un servidor aparte con su propia auth
+      <div className="flex w-fit max-w-[1180px] flex-col gap-4 rounded-[28px] border-[3px] border-df-ink bg-white px-10 py-5">
+        <p className="text-[30px] font-bold">
+          <Mark tone="blue">MCP</Mark> las estandariza en un servidor aparte, con su propia auth
         </p>
         <div className="flex items-center gap-6">
         <Pill fill="white" className="px-6 py-2 text-[28px]">
@@ -297,7 +284,7 @@ function Agente() {
           Cliente
         </Pill>
         <div className="flex flex-col items-center">
-          <Tech className="text-[24px] text-gde-soft">tools/list · tools/call</Tech>
+          <Tech className="text-[24px] text-df-soft">tools/list · tools/call</Tech>
           <Arrow className="w-48" />
         </div>
         <Pill fill="blue" className="px-6 py-2 text-[28px]">
@@ -367,7 +354,7 @@ function QueEs() {
     { icon: 'smart_toy', title: 'El agente', fill: 'yellow', body: <>Las llama como funciones. Sin clics, sin scraping.</> },
   ];
   return (
-    <Content bg="hero" tone="blue" label="WebMCP" title="La página registra herramientas y el agente las llama">
+    <Content tone="blue" label="WebMCP" title="La página registra herramientas y el agente las llama">
       <div className="flex flex-1 items-center gap-6">
         {steps.map((s, i) => (
           <div key={s.title} className="flex flex-1 items-center gap-6">
@@ -395,23 +382,23 @@ function Registro() {
     ['annotations', 'Cómo tratarla'],
   ];
   return (
-    <CodeSlide tone="green" label="Anatomía · registerTool(tool, { signal })" title="Cinco partes y un AbortSignal">
+    <Content tone="green" label="Anatomía · registerTool(tool, { signal }) · DevTools → Console" title="Cinco partes y un AbortSignal">
       <div className="flex flex-1 gap-10">
-        <Code code={REGISTER_TOOL} file="DevTools → Console" dense className="flex-1" />
-        <div className="flex w-[460px] shrink-0 flex-col justify-center gap-5">
+        <Code code={REGISTER_TOOL} dense compact className="flex-1 self-start" />
+        <div className="flex w-[420px] shrink-0 flex-col gap-2">
           {parts.map(([tech, plain]) => (
-            <div key={tech} className="flex flex-col gap-1">
-              <Tech className={`text-[28px] font-bold ${TEXT_ON_DARK.green}`}>{tech}</Tech>
-              <span className="text-[26px] text-gde-mist">{plain}</span>
+            <div key={tech} className="flex flex-col leading-tight">
+              <Tech className="text-[26px] font-bold">{tech}</Tech>
+              <span className="text-[24px] text-df-soft">{plain}</span>
             </div>
           ))}
-          <Box fill="green" className="mt-2 gap-2 px-8 py-6">
-            <p className="text-[30px] font-bold leading-tight">No existe unregisterTool()</p>
-            <p className="text-[26px] leading-snug">Abortar la señal la quita.</p>
+          <Box fill="green" className="mt-1 gap-1 px-7 py-3">
+            <p className="text-[28px] font-bold leading-tight">No existe unregisterTool()</p>
+            <p className="text-[24px] leading-tight">Abortar la señal la quita.</p>
           </Box>
         </div>
       </div>
-    </CodeSlide>
+    </Content>
   );
 }
 
@@ -449,43 +436,39 @@ function LadoAgente() {
     <>Borrador W3C · 13 nov 2026</>,
     <>Origin trial · Chrome 149–156</>,
     <>
-      <Tech>navigator.modelContext</Tech> obsoleto (Chrome 150)
+      <Tech>navigator.modelContext</Tech> obsoleto
     </>,
-    <Tech>chrome://flags/#enable-webmcp-testing</Tech>,
     <>Sin provideContext: solo herramientas</>,
+    <Tech>chrome://flags/#enable-webmcp-testing</Tech>,
   ];
   return (
     <Content tone="blue" label="El resto de la API" title="El otro lado: lo que ve y usa el agente">
       <div className="grid grid-cols-3 gap-8">
         {cols.map((c) => (
-          <Box key={c.title} fill={c.fill} className="gap-4 py-7">
-            <p className="text-[38px] font-bold">{c.title}</p>
-            <ul className="flex flex-col gap-3">
+          <Box key={c.title} fill={c.fill} className="gap-2 py-5">
+            <p className="text-[34px] font-bold">{c.title}</p>
+            <ul className="flex flex-col gap-2">
               {c.items.map(([tech, plain]) => (
-                <li key={tech} className="flex flex-col gap-1">
+                <li key={tech} className="flex flex-col leading-tight">
                   <Tech className="text-[28px] font-bold">{tech}</Tech>
-                  <span className="text-[26px] text-gde-soft">{plain}</span>
+                  <span className="text-[26px] text-df-soft">{plain}</span>
                 </li>
               ))}
             </ul>
           </Box>
         ))}
       </div>
-      <div className="mt-auto flex flex-col gap-4">
+      <Box fill="white" className="w-[1180px] gap-2 px-8 py-4">
         <Label tone="yellow" className="text-[26px]">
           Estado: experimental
         </Label>
-        <div className="flex flex-wrap gap-3">
+        <ul className="grid grid-cols-[auto_1fr] gap-x-10 gap-y-1 text-[24px] leading-tight">
           {status.map((s, i) => (
-            <Pill key={i} fill="white" className="px-6 py-2 text-[24px]">
-              {s}
-            </Pill>
+            <li key={i}>— {s}</li>
           ))}
-          <Pill fill="green" className="px-6 py-2 text-[24px]">
-            Polyfill incluido: sin flags
-          </Pill>
-        </div>
-      </div>
+          <li className="font-bold">— Polyfill incluido: sin flags</li>
+        </ul>
+      </Box>
     </Content>
   );
 }
@@ -493,12 +476,12 @@ function LadoAgente() {
 /** One column of the comparison: icon header + bullet list. */
 function CompareColumn({ icon, title, fill, items }: { icon: IconName; title: string; fill: BoxFill; items: string[] }) {
   return (
-    <Box fill={fill} size="lg" className="gap-8">
+    <Box fill={fill} className="gap-6">
       <div className="flex items-center gap-5">
-        <Icon name={icon} className="h-14 w-14" />
-        <p className="text-[48px] font-bold">{title}</p>
+        <Icon name={icon} className="h-12 w-12 shrink-0" />
+        <p className="text-[44px] font-bold">{title}</p>
       </div>
-      <ul className="flex flex-col gap-5 text-[30px] leading-snug">
+      <ul className="flex flex-col gap-4 text-[28px] leading-snug">
         {items.map((t) => (
           <li key={t} className="flex gap-4">
             <span aria-hidden>—</span>
@@ -524,34 +507,38 @@ function VsMcp() {
     'No ve lo que el usuario tiene en pantalla',
   ];
   return (
-    <Content tone="green" label="No compiten, se complementan" title="WebMCP o MCP de servidor: ¿cuándo cada uno?">
-      <div className="grid flex-1 grid-cols-2 content-center gap-10">
+    <Frame bg="two-panel">
+      {/* Left panel: x 75–922, y 79–1003. */}
+      <Region x={140} y={140} w={720} h={740} className="gap-8">
+        <Label tone="green">No compiten, se complementan</Label>
+        <h1 className="text-balance text-[60px] font-bold leading-[1.08]">¿WebMCP o MCP de servidor?</h1>
         <CompareColumn icon="web" title="WebMCP" fill="green" items={web} />
+      </Region>
+      {/* Right panel: x 997–1844, content above the GDG logo notch (y 844). */}
+      <Region x={1050} y={140} w={740} h={680} className="justify-center">
         <CompareColumn icon="dns" title="MCP de servidor" fill="blue" items={server} />
-      </div>
-    </Content>
+      </Region>
+    </Frame>
   );
 }
 
 function Seguridad() {
   return (
     <Statement label="Un aviso para más tarde" tone="red">
-      <h1 className="max-w-[1600px] text-balance text-[104px] font-bold leading-[1.05]">
-        La amenaza real no es el usuario.
-        <br />
-        <span className={TEXT_ON_DARK.red}>Es el texto que lee el agente.</span>
+      <h1 className="text-balance text-[68px] font-bold leading-[1.08]">
+        La amenaza real no es el usuario. <Mark tone="red">Es el texto que lee el agente.</Mark>
       </h1>
-      <div className="flex flex-wrap gap-6">
-        <Pill fill="white" className="px-8 py-4 text-[32px]">
-          <Icon name="warning" className="h-9 w-9" />
+      <div className="flex flex-col gap-4">
+        <Pill fill="white" className="px-7 py-3 text-[28px]">
+          <Icon name="warning" className="h-8 w-8" />
           Inyección de prompts
         </Pill>
-        <Pill fill="white" className="px-8 py-4 text-[32px]">
-          <Icon name="verified_user" className="h-9 w-9" />
+        <Pill fill="white" className="px-7 py-3 text-[28px]">
+          <Icon name="verified_user" className="h-8 w-8" />
           Las anotaciones son pistas, no controles
         </Pill>
       </div>
-      <p className="text-[36px] text-gde-mist">Guarda esta idea. En el Acto 4 alguien va a intentar darle órdenes a tu agente.</p>
+      <p className="text-[32px] leading-snug">Guarda esta idea. En el Acto 4 alguien va a intentar darle órdenes a tu agente.</p>
     </Statement>
   );
 }
@@ -564,7 +551,7 @@ function ArchBox({ icon, title, path, fill, children }: { icon: IconName; title:
     <Box fill={fill} className="h-[390px] flex-1 gap-4 px-7">
       <Icon name={icon} className="h-14 w-14" />
       <p className="text-[34px] font-bold leading-tight">{title}</p>
-      <Pill fill="ink" className="px-5 py-1 font-gde-code text-[24px]">
+      <Pill fill="ink" className="px-5 py-1 font-df-code text-[24px]">
         {path}
       </Pill>
       <div className="text-[26px] leading-snug">{children}</div>
@@ -614,22 +601,16 @@ function Mision() {
     { icon: 'wifi_off', text: <>¿Sin clave o sin red? Modo simulado</> },
   ];
   return (
-    <Content bg="hero" tone="red" label="La misión · 90 minutos" title="Cinco actos. Nadie se queda atrás.">
+    <Content tone="red" label="La misión · 90 minutos" title="Cinco actos. Nadie se queda atrás.">
       <div className="grid grid-cols-5 gap-6">
         {acts.map((a) => (
           <Box key={a.n} fill="white" className="h-[230px] justify-between px-7 py-6">
             <div className="flex items-center justify-between">
-              <span
-                className={`flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-gde-ink text-[28px] font-bold ${SOLID[a.tone]} ${
-                  a.tone === 'yellow' ? 'text-gde-ink' : 'text-white'
-                }`}
-              >
-                {a.n}
-              </span>
-              <p className="font-gde-code text-[32px] font-bold tabular-nums">{a.min}</p>
+              <NumberDisc n={a.n} tone={a.tone} className="h-14 w-14 text-[28px]" />
+              <p className="font-df-code text-[32px] font-bold tabular-nums">{a.min}</p>
             </div>
             <p className="text-[34px] font-bold leading-tight">{a.name}</p>
-            <Pill fill="ink" className="px-5 py-1 font-gde-code text-[24px]">
+            <Pill fill="ink" className="px-5 py-1 font-df-code text-[24px]">
               {a.tag}
             </Pill>
           </Box>
@@ -660,40 +641,45 @@ function Setup() {
     { icon: 'wifi', label: 'Wi-Fi', value: TALK.wifi },
   ];
   return (
-    <CodeSlide tone="green" label="Verificación rápida · Node 22.12 o superior" title="¿Todo listo? Verifica tu entorno">
+    <Content tone="green" label="Verificación rápida · Node 22.12 o superior" title="¿Todo listo? Verifica tu entorno">
       <Code code={SETUP} lang="sh" file="Terminal" size="lg" />
-      <div className="flex flex-wrap gap-6">
+      <div className="flex flex-wrap gap-5">
         {room.map((r) => (
-          <Pill key={r.label} fill="white" className="px-7 py-3 text-[28px]">
+          <Pill key={r.label} fill="white" className="px-7 py-3 text-[26px]">
             <Icon name={r.icon} className="h-8 w-8" />
-            <span className="text-gde-soft">{r.label}</span>
-            <span className="font-gde-code">{r.value}</span>
+            <span className="text-df-soft">{r.label}</span>
+            <span className="font-df-code">{r.value}</span>
           </Pill>
         ))}
       </div>
-    </CodeSlide>
+    </Content>
   );
 }
 
 function Vamos() {
   return (
-    <Frame bg="hero">
-      <Region x={160} y={120} w={1600} h={840} className="justify-between">
-        <div className="flex items-center gap-6">
-          <Label tone="red" className="text-[32px]">
-            Acto 1 · Manos a la obra · 6 min
-          </Label>
-          <Pill fill="ink" className="px-6 py-2 font-gde-code text-[26px]">
+    <Frame bg="title-arrow">
+      {/* Upper-right panel: x 1357–1844, y 79–308 (after the arrow and globe). */}
+      <Region x={1357} y={79} w={487} h={229} className="items-center justify-center gap-2">
+        <Label tone="red" className="text-[34px]">
+          Acto 1 · 6 min
+        </Label>
+        <p className="font-df-mono text-[22px] font-light text-df-soft">Manos a la obra</p>
+      </Region>
+      {/* Lower panel: x 75–1844, y 308–1003 (GDG logo notch bottom-right). */}
+      <Region x={167} y={350} w={1563} className="gap-8">
+        <div className="flex items-center gap-8">
+          <h1 className="text-[104px] font-bold leading-none tracking-tight">
+            ¡A <Mark tone="yellow">rodar</Mark>!
+          </h1>
+          <Pill fill="ink" className="px-6 py-2 font-df-code text-[24px]">
             docs/01-acto-1-incidente.md
           </Pill>
         </div>
-        <h1 className="text-[120px] font-bold leading-[1] tracking-tight">
-          ¡A <Mark tone="yellow">rodar</Mark>!
-        </h1>
-        <div className="flex flex-col gap-6">
+        <div className="flex w-[1200px] flex-col gap-5">
           <Step n="1" tone="red">
             Reproduce el incidente con <b>“{DEMO_PROMPT_LABELS.catalog}”</b>:
-            <p className="mt-2 rounded-[20px] border-[3px] border-gde-ink bg-white px-6 py-3 text-[30px] italic">“{DEMO_PROMPTS.catalog}”</p>
+            <p className="mt-2 rounded-[20px] border-[3px] border-df-ink bg-white px-6 py-3 text-[26px] italic">“{DEMO_PROMPTS.catalog}”</p>
           </Step>
           <Step n="2" tone="blue">
             Escribe el hook <Tech>useWebMcpTools</Tech> con <Tech>AbortSignal</Tech>
@@ -702,7 +688,7 @@ function Vamos() {
             Registra <Tech>get_store_info</Tech> y agrégala a <Tech>storeTools</Tech>
           </Step>
           <Step n="4" tone="yellow">
-            Verifica con <b>“{DEMO_PROMPT_LABELS.storeInfo}”</b>: la píldora brilla y dice “Ejecutado por agente”
+            Verifica con <b>“{DEMO_PROMPT_LABELS.storeInfo}”</b>: la píldora brilla
           </Step>
         </div>
       </Region>

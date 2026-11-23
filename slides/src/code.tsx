@@ -2,13 +2,16 @@ import { Fragment, type ReactNode } from 'react';
 
 /**
  * Minimal TS/shell highlighter for slides. Zero dependencies so the deck renders
- * offline. Colors are gde tokens, every one >= 7:1 on the #17181b card.
+ * offline. Colors are the template halftones, every token >= 7:1 on #1e1e1e.
  */
 const TS_TOKEN =
-  /(\/\/.*$)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|async|await|function|return|if|new|export|import|from|true|false|null)\b|(<\/?[a-z]+)/gm;
+  /(\/\/.*$)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(document\.modelContext)\b|\b(const|let|async|await|function|return|if|new|export|import|from|true|false|null)\b/gm;
 
 /** Shell: `# comments`, strings and the command name at the start of a line. */
-const SH_TOKEN = /(#.*$)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")|^(git|npm|cp|cd|node)\b/gm;
+const SH_TOKEN = /(#.*$)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")|()^(git|npm|cp|cd|node)\b/gm;
+
+/** The WebMCP entry point: highlighted on its own so the audience sees it comes from the browser, not an import. */
+const GLOBAL_CLASS = 'font-semibold text-df-halftone-yellow underline decoration-dotted underline-offset-[6px]';
 
 export type CodeLang = 'ts' | 'sh';
 
@@ -17,15 +20,16 @@ function highlight(code: string, lang: CodeLang) {
   let last = 0;
   for (const match of code.matchAll(lang === 'sh' ? SH_TOKEN : TS_TOKEN)) {
     const index = match.index ?? 0;
+    const [text, comment, string, global] = match;
+    if (!text) continue;
     if (index > last) parts.push(code.slice(last, index));
-    const [text, comment, string, , tag] = match;
     const cls = comment
-      ? 'text-gde-code-muted'
+      ? 'text-df-code-muted'
       : string
-        ? 'text-gde-green-light'
-        : tag
-          ? 'text-gde-red-light'
-          : 'text-gde-blue-light';
+        ? 'text-df-halftone-green'
+        : global
+          ? GLOBAL_CLASS
+          : 'text-df-halftone-blue';
     parts.push(
       <span key={index} className={cls}>
         {text}
@@ -37,41 +41,35 @@ function highlight(code: string, lang: CodeLang) {
   return parts.map((p, i) => <Fragment key={i}>{p}</Fragment>);
 }
 
-/** Dark code card. Sizes are canvas px (1920×1080): never below 24px. */
+/** Template code card (ink). Sizes are canvas px (1920×1080): never below 24px. */
 export function Code({
   code,
   file,
   lang = 'ts',
   size = 'md',
-  compact = false,
   dense = false,
+  compact = false,
   className = '',
 }: {
   code: string;
   file?: string;
   lang?: CodeLang;
   size?: 'md' | 'lg';
-  /** Less vertical padding, for stacked cards. */
-  compact?: boolean;
-  /** Tighter line height (same font size), for long snippets that must stay inside the safe area. */
+  /** Tighter line height (same font size), for long snippets that must stay inside the panel. */
   dense?: boolean;
+  /** Less vertical padding, for short cards next to other content. */
+  compact?: boolean;
   className?: string;
 }) {
-  const text = { md: 'text-[24px]', lg: 'text-[28px]' }[size];
+  const text = { md: 'text-[24px]', lg: 'text-[26px]' }[size];
+  const pad = compact ? 'pb-5' : 'pb-9';
   return (
-    <div className={`overflow-hidden rounded-[24px] border-[3px] border-gde-ink bg-gde-night ${className}`}>
-      {file && (
-        <div className="flex items-center gap-3 border-b-[3px] border-gde-ink bg-gde-ink px-10 py-3 font-gde-code text-[24px] text-gde-code-muted">
-          <span aria-hidden className="flex gap-2">
-            <span className="h-4 w-4 rounded-full bg-gde-red" />
-            <span className="h-4 w-4 rounded-full bg-gde-yellow" />
-            <span className="h-4 w-4 rounded-full bg-gde-green" />
-          </span>
-          {file}
-        </div>
-      )}
+    <div className={`overflow-hidden rounded-[24px] border-[3px] border-df-ink bg-df-ink ${className}`}>
+      {file && <div className="px-12 pt-7 font-df-mono text-[22px] font-light text-df-code-muted">{file}</div>}
       <pre
-        className={`m-0 whitespace-pre px-10 ${compact ? 'py-4' : 'py-7'} font-gde-code ${dense ? 'leading-[1.3]' : 'leading-[1.45]'} text-gde-code-text ${text}`}
+        className={`m-0 whitespace-pre px-12 ${pad} font-df-code ${dense ? 'leading-[1.35]' : 'leading-[1.55]'} text-df-code-text ${
+          file ? 'pt-4' : compact ? 'pt-5' : 'pt-9'
+        } ${text}`}
       >
         <code>{highlight(code.trim(), lang)}</code>
       </pre>

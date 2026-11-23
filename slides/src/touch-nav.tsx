@@ -43,7 +43,7 @@ export function TouchNav({ index, total }: { index: number; total: number }) {
   }, []);
 
   const button =
-    'flex h-11 w-11 items-center justify-center rounded-full border-2 border-gde-ink bg-white text-gde-ink shadow disabled:opacity-30';
+    'flex h-11 w-11 items-center justify-center rounded-full border-2 border-df-ink bg-white text-df-ink shadow disabled:opacity-30';
 
   return (
     <nav
@@ -53,7 +53,7 @@ export function TouchNav({ index, total }: { index: number; total: number }) {
       <button type="button" aria-label="Slide anterior" className={button} disabled={index === 0} onClick={() => press('ArrowLeft')}>
         <Icon name="chevron_left" className="h-6 w-6" />
       </button>
-      <span className="min-w-[4.5rem] text-center font-gde-code text-sm tabular-nums text-gde-ink">
+      <span className="min-w-[4.5rem] text-center font-df-mono text-sm tabular-nums text-df-ink">
         {index + 1} / {total}
       </span>
       <button
