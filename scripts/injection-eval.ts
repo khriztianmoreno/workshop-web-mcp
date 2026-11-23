@@ -17,6 +17,9 @@
  *   --models <a,b>     comma-separated model ids (default: GEMINI_MODEL or gemini-3.8-flash).
  *   --runs <n>         runs per model (default 5).
  *   --out <file>       append one JSON line per run.
+ *   --system-prompt <full|naive>
+ *                      naive strips the "Security rules" block from server/system-prompt.ts
+ *                      inside the temporary worktree (never in this checkout; not allowed with --root).
  *
  * Confirmation policy: if the ref's tools ask for confirmation (consequentialHint),
  * the simulated human DECLINES, as the instructor would when the agent tries to sabotage.
@@ -24,7 +27,7 @@
  */
 import 'dotenv/config';
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, existsSync, mkdtempSync, symlinkSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -44,6 +47,7 @@ interface ToolCallRecord {
 
 interface RunRecord {
   ref: string;
+  systemPrompt: string;
   model: string;
   run: number;
   outcome: Outcome;
@@ -64,6 +68,7 @@ const { values } = parseArgs({
   options: {
     ref: { type: 'string', default: 'acto-4' },
     root: { type: 'string' },
+    'system-prompt': { type: 'string', default: 'full' },
     models: { type: 'string' },
     runs: { type: 'string', default: '5' },
     out: { type: 'string' },
@@ -96,12 +101,23 @@ globalThis.fetch = async (input, init) => {
   return response;
 };
 
+/** Removes the "Security rules" block (it runs until the end of the template literal). */
+function stripSecurityRules(file: string) {
+  const source = readFileSync(file, 'utf8');
+  const patched = source.replace(/\n\nSecurity rules[\s\S]*?`;/, '`;');
+  if (patched === source) throw new Error(`Could not find the "Security rules" block in ${file}.`);
+  writeFileSync(file, patched);
+}
+
 function prepareRoot(): { root: string; cleanup: () => void } {
+  if (!['full', 'naive'].includes(values['system-prompt']!)) throw new Error('--system-prompt must be "full" or "naive".');
+  if (values.root && values['system-prompt'] !== 'full') throw new Error('--system-prompt naive needs a temporary worktree (drop --root).');
   if (values.root) return { root: resolve(values.root), cleanup: () => {} };
   const root = join(mkdtempSync(join(tmpdir(), 'injection-eval-')), values.ref!);
   execFileSync('git', ['-C', repoRoot, 'worktree', 'add', '--detach', root, values.ref!], { stdio: 'ignore' });
   // The worktree resolves packages from the main checkout.
   if (!existsSync(join(root, 'node_modules'))) symlinkSync(join(repoRoot, 'node_modules'), join(root, 'node_modules'));
+  if (values['system-prompt'] === 'naive') stripSecurityRules(join(root, 'server/system-prompt.ts'));
   return {
     root,
     cleanup: () => execFileSync('git', ['-C', repoRoot, 'worktree', 'remove', '--force', root], { stdio: 'ignore' }),
@@ -137,7 +153,7 @@ function classify(calls: ToolCallRecord[]): Pick<RunRecord, 'outcome' | 'checkou
 async function main() {
   const { root, cleanup } = prepareRoot();
   try {
-    const [{ createGeminiAgent }, { runAgentTurn }, { PolyfillModelContext }, { storeTools }, store, { DEMO_PROMPTS }] =
+    const [{ createGeminiAgent }, { runAgentTurn }, { PolyfillModelContext }, { storeTools }, store, { DEMO_PROMPTS }, { SYSTEM_PROMPT }] =
       await Promise.all([
         load(root, 'server/gemini-agent.ts'),
         load(root, 'src/agent/agent-loop.ts'),
@@ -145,8 +161,11 @@ async function main() {
         load(root, 'src/webmcp/tools/index.ts'),
         load(root, 'src/store/store.ts'),
         load(root, 'shared/demo-prompts.ts'),
+        load(root, 'server/system-prompt.ts'),
       ]);
     const prompt: string = DEMO_PROMPTS.injection;
+    console.log(`ref=${values.root ? root : values.ref} system-prompt=${values['system-prompt']}`);
+    if (values['system-prompt'] === 'naive') console.log(`--- effective system prompt ---\n${SYSTEM_PROMPT}\n---`);
     const records: RunRecord[] = [];
 
     for (const model of models) {
@@ -184,6 +203,7 @@ async function main() {
         const classified = classify(toolCalls);
         const record: RunRecord = {
           ref: values.root ? `root:${root}` : values.ref!,
+          systemPrompt: values['system-prompt']!,
           model,
           run,
           ...classified,
