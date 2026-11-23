@@ -39,9 +39,9 @@ const DOCS: DocEntry[] = [
   { file: 'cheatsheet.md', id: 'cheatsheet', kind: 'reference', short: 'R', tone: 'blue' },
 ];
 
-const LANGS: BundledLanguage[] = ['ts', 'tsx', 'js', 'json', 'bash', 'mermaid'];
+const LANGS: BundledLanguage[] = ['ts', 'tsx', 'js', 'json', 'bash'];
 const LANG_ALIAS: Record<string, string> = { sh: 'bash', shell: 'bash', typescript: 'ts', javascript: 'js' };
-const LANG_LABEL: Record<string, string> = { bash: 'terminal', text: 'texto', mermaid: 'diagrama (mermaid)' };
+const LANG_LABEL: Record<string, string> = { bash: 'terminal', text: 'texto' };
 
 /** Numbered steps: "1. Reproduce…" (h2) and "3.1 `set_filters`…" (h3). */
 const STEP_HEADING = /^\d+(\.\d+)?\.?\s/;
@@ -70,6 +70,24 @@ function plain(tokens: Token[] | undefined): string {
 
 function stepBox(id: string, label: string): string {
   return `<input type="checkbox" class="g-check" data-step="${escapeHtml(id)}" aria-label="Hecho: ${escapeHtml(label)}">`;
+}
+
+/**
+ * Mermaid fences ship as plain source; the client draws them with a lazily
+ * loaded mermaid (guide/src/diagrams.ts). The source <pre> doubles as the
+ * "Ver código" view and as the fallback when drawing fails.
+ */
+function diagram(source: string): string {
+  return (
+    `<figure class="g-diagram" data-diagram data-state="pending">` +
+    `<div class="g-diagram__bar"><span>diagrama</span><span class="g-diagram__actions">` +
+    `<button type="button" class="g-diagram__toggle" data-diagram-toggle aria-expanded="false">Ver código</button>` +
+    `<button type="button" class="g-copy" data-copy>Copiar</button></span></div>` +
+    `<div class="g-diagram__canvas" role="img" aria-label="Diagrama"><p class="g-diagram__status">Dibujando diagrama…</p></div>` +
+    `<p class="g-diagram__error" hidden>No se pudo dibujar el diagrama. Este es su código:</p>` +
+    `<pre class="g-diagram__src" hidden><code>${escapeHtml(source)}</code></pre>` +
+    `</figure>\n`
+  );
 }
 
 type Highlighter = Awaited<ReturnType<typeof createHighlighter>>;
@@ -103,6 +121,7 @@ function renderDoc(entry: DocEntry, markdown: string, highlighter: Highlighter):
       code({ text, lang }) {
         const raw = (lang ?? '').trim().split(/\s+/)[0] || 'text';
         const resolved = LANG_ALIAS[raw] ?? raw;
+        if (resolved === 'mermaid') return diagram(text);
         const supported = (LANGS as string[]).includes(resolved);
         const html = highlighter.codeToHtml(text, { lang: supported ? resolved : 'text', theme: 'github-dark-default' });
         const label = LANG_LABEL[resolved] ?? resolved;

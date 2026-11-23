@@ -563,6 +563,86 @@ a {
   tab-size: 2;
 }
 
+/* Mermaid diagram: drawn on the client (diagrams.ts), source kept for "Ver código" and as fallback. */
+.g-diagram {
+  margin: 16px 0;
+  border: 3px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.g-diagram__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px 0 18px;
+  font-family: var(--font-mono);
+  font-weight: 300;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.g-diagram__actions {
+  display: flex;
+  gap: 8px;
+}
+.g-diagram .g-copy,
+.g-diagram__toggle {
+  padding: 4px 12px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: 600 13px var(--font);
+  cursor: pointer;
+}
+.g-diagram .g-copy:hover,
+.g-diagram__toggle:hover {
+  background: var(--text);
+  color: var(--surface);
+}
+.g-diagram__canvas {
+  padding: 12px 16px 16px;
+  overflow-x: auto;
+}
+/* mermaid sizes labels outside the article; `.g-sec p { overflow-wrap: anywhere }` would re-wrap and clip them. */
+.g-sec .g-diagram__canvas p {
+  overflow-wrap: normal;
+}
+.g-diagram__canvas svg {
+  display: block;
+  height: auto;
+  margin: 0 auto;
+}
+.g-diagram__status,
+.g-diagram__error {
+  margin: 0;
+  padding: 8px 18px 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.g-diagram__status {
+  padding: 24px 0;
+  text-align: center;
+}
+.g-diagram__src {
+  margin: 12px;
+  padding: 14px 18px;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: var(--code-bg);
+  color: var(--code-text);
+  font-family: var(--font-code);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.g-diagram__src[hidden],
+.g-diagram__canvas[hidden],
+.g-diagram__error[hidden],
+.g-diagram__toggle[hidden] {
+  display: none;
+}
+
 /* Prompts and sample output read better wrapped than scrolled. */
 .g-code--text pre.shiki {
   white-space: pre-wrap;

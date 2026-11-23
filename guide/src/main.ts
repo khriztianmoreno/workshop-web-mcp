@@ -3,6 +3,7 @@ import './guide.css';
 import { docs } from 'virtual:guide-content';
 import type { GuideDoc, GuideSection } from './content-types';
 import { copyText } from './copy';
+import { renderDiagrams, type Theme } from './diagrams';
 import { loadProgress, readPref, saveProgress, writePref } from './storage';
 
 const DEFAULT_DOC = 'acto-1';
@@ -157,6 +158,7 @@ function render(): void {
   const target = anchor ? document.getElementById(anchor) : null;
   if (target) target.scrollIntoView();
   else window.scrollTo(0, 0);
+  void renderDiagrams(main, effectiveTheme());
 }
 
 document.addEventListener('change', (event) => {
@@ -170,9 +172,18 @@ document.addEventListener('change', (event) => {
 });
 
 document.addEventListener('click', (event) => {
+  const toggle = (event.target as Element | null)?.closest<HTMLButtonElement>('[data-diagram-toggle]');
+  if (toggle) {
+    const src = toggle.closest('.g-diagram')?.querySelector<HTMLElement>('.g-diagram__src');
+    if (!src) return;
+    src.hidden = !src.hidden;
+    toggle.setAttribute('aria-expanded', String(!src.hidden));
+    toggle.textContent = src.hidden ? 'Ver código' : 'Ocultar código';
+    return;
+  }
   const button = (event.target as Element | null)?.closest<HTMLButtonElement>('[data-copy]');
   if (!button) return;
-  const source = button.closest('.g-code, .g-cmd')?.querySelector('pre, code');
+  const source = button.closest('.g-code, .g-cmd, .g-diagram')?.querySelector('pre, code');
   if (!source) return;
   void copyText(source.textContent ?? '').then((ok) => {
     button.textContent = ok ? 'Copiado' : 'No se pudo copiar';
@@ -185,17 +196,28 @@ document.addEventListener('click', (event) => {
 });
 
 /* Theme: follows the system until the viewer picks one; the choice is remembered. */
+const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+
+function effectiveTheme(): Theme {
+  const chosen = document.documentElement.dataset.theme;
+  if (chosen === 'light' || chosen === 'dark') return chosen;
+  return darkQuery.matches ? 'dark' : 'light';
+}
+
 function applyTheme(theme: string | null): void {
   if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
   else delete document.documentElement.dataset.theme;
 }
 applyTheme(readPref(THEME_KEY));
 root.querySelector('[data-theme-toggle]')!.addEventListener('click', () => {
-  const current =
-    document.documentElement.dataset.theme ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  const nextTheme = current === 'dark' ? 'light' : 'dark';
+  const nextTheme = effectiveTheme() === 'dark' ? 'light' : 'dark';
   applyTheme(nextTheme);
   writePref(THEME_KEY, nextTheme);
+  void renderDiagrams(main, nextTheme);
+});
+// Following the system: redraw diagrams when it switches.
+darkQuery.addEventListener('change', () => {
+  if (!document.documentElement.dataset.theme) void renderDiagrams(main, effectiveTheme());
 });
 
 window.addEventListener('hashchange', render);
