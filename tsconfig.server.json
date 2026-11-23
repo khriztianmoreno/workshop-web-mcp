@@ -6,10 +6,11 @@
     "moduleResolution": "bundler",
     "strict": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "skipLibCheck": true,
     "noUnusedLocals": true,
     "types": ["node"]
   },
-  "include": ["server", "shared", "vite.config.ts"]
+  "include": ["server", "shared", "guide/build", "vite.config.ts", "vite.guide.config.ts"]
 }

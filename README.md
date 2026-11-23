@@ -45,10 +45,12 @@ npm run dev                      # abre http://localhost:5173
 | --- | --- |
 | `npm run dev` | App + proxy con recarga en caliente |
 | `npm run slides` | Abre las slides de apertura (solo Vite, sin proxy) |
+| `npm run guide` | Abre la guía en vivo del taller (solo Vite, sin proxy) |
+| `npm run build:guide` | Build estático solo de la guía en `dist-guide/` (para publicarla) |
 | `npm run server:mock` | Solo el proxy, forzando el modo simulado |
 | `npm test` | Pruebas con Vitest |
 | `npm run typecheck` | TypeScript de la app y del servidor |
-| `npm run build` | Build de producción de la app |
+| `npm run build` | Build de producción de la app (incluye `/slides/` y `/guide/`) |
 | `npm run check` | Verificación del entorno (Node, dependencias, `.env`, proxy) |
 
 ## Slides de apertura
@@ -62,8 +64,21 @@ Las slides que proyecta el instructor al inicio (los primeros ≈9 min del Acto 
 
 - `npm run slides` levanta Vite y abre la presentación (si `npm run dev` ya ocupa el puerto 5173, Vite propone otro).
 - Navegación: flechas o espacio. **S** abre la vista del orador en una ventana aparte; ambas se sincronizan por `BroadcastChannel` (mismo navegador, sin red). En pantallas táctiles aparecen botones y gestos; `?touch` los fuerza.
-- Fuentes: `slides/src/slides.tsx` (contenido), `slides/notes/*.md` (notas del orador) y `slides/src/talk.ts` (datos del evento: completa repo, proxy y Wi-Fi antes de presentar).
+- Fuentes: `slides/src/slides.tsx` (contenido), `slides/notes/*.md` (notas del orador) y `slides/src/talk.ts` (datos del evento: completa guía, repo, proxy y Wi-Fi antes de presentar).
 - Motor: [`@khriztianmoreno/speaker-kit`](https://www.npmjs.com/package/@khriztianmoreno/speaker-kit) + Tailwind (solo en `slides/`). La tienda no carga nada de esto.
+
+## Guía en vivo
+
+Una página para tener abierta junto al editor durante el taller: un acto por página con su tiempo, objetivo, pasos, hito y la caja "¿Te quedaste atrás?" con el comando para saltar al tag del acto. Los bloques de código tienen botón de copiar, las soluciones vienen plegadas y cada paso tiene una casilla; el avance se guarda en el navegador (`localStorage`).
+
+| URL | Qué es |
+| --- | --- |
+| [http://localhost:5173/guide/](http://localhost:5173/guide/) | La guía, con `npm run dev` o `npm run guide` |
+| `http://localhost:5173/guide/#acto-3` | Enlace directo a un acto (`#prework`, `#acto-1`…`#acto-5`, `#cheatsheet`) |
+
+- **Sin contenido duplicado:** la guía lee `docs/*.md` al compilar (plugin `guide/build/content.ts`, con marked y shiki) y entrega HTML listo. Si cambias un doc, cambia la guía.
+- **Publicarla:** `npm run build:guide` genera `dist-guide/`, un sitio estático autocontenido. La base es relativa (`./`), así que funciona en cualquier ruta; `GUIDE_BASE=/ruta/ npm run build:guide` la fija si hace falta. El flujo `.github/workflows/deploy-guide.yml` la publica en GitHub Pages; los pasos están en [docs/guia-instructor.md](docs/guia-instructor.md#publicar-la-guía-en-vivo).
+- Como se compila desde `main`, la guía se puede publicar o actualizar después de crear los tags de los actos, sin moverlos.
 
 ## Mapa de tags
 

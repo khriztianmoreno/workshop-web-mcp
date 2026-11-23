@@ -16,6 +16,8 @@ export const TALK = {
   /** Instructor proxy for attendees without a Gemini key (AGENT_BASE_URL). */
   proxyUrl: '[URL del proxy]',
   wifi: '[red · clave]',
+  /** Published live guide (npm run build:guide → GitHub Pages). Locally: http://localhost:5173/guide/ */
+  guideUrl: '[URL de la guía]',
 } as const;
 
 /** Sync channel shared by the audience and speaker views. Must match on both. */

@@ -22,6 +22,7 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 - [ ] Publicar el repositorio y verificar que los tags `acto-1`…`final` existen en el remoto.
 - [ ] Crear una clave de Gemini dedicada al taller y revisar su cuota.
 - [ ] Desplegar el **proxy del instructor** (ver abajo) y probar `GET /api/health`.
+- [ ] Publicar la **guía en vivo** (ver "Publicar la guía en vivo") y abrirla en el celular para revisarla.
 
 ### El día anterior
 
@@ -30,13 +31,13 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 - [ ] Ensayar los 5 prompts del panel en **modo simulado** y con **Gemini**.
 - [ ] Clonar el repo en una segunda carpeta en `acto-1` para la demo en vivo.
 - [ ] Hotspot móvil cargado como plan B de red.
-- [ ] Completar repo, proxy y Wi-Fi en `slides/src/talk.ts` y ensayar las slides con la vista del orador (ver "Slides de apertura").
+- [ ] Completar guía, repo, proxy y Wi-Fi en `slides/src/talk.ts` y ensayar las slides con la vista del orador (ver "Slides de apertura").
 
 ### 30 minutos antes
 
 - [ ] Proyector: zoom del navegador al 125 %, editor con fuente 18+, terminal con fuente grande.
 - [ ] Dos ventanas: la tienda (izquierda) y el editor (derecha). DevTools cerradas hasta el Acto 1.
-- [ ] Escribir en la pizarra o en una diapositiva: URL del repo, URL del proxy, Wi-Fi.
+- [ ] Escribir en la pizarra o en una diapositiva: URL de la guía, URL del repo, URL del proxy, Wi-Fi (la slide de verificación ya las proyecta desde `talk.ts`).
 - [ ] `npm run dev` corriendo en `acto-1`; insignia del panel visible.
 - [ ] Slides abiertas desde la carpeta en `main` (`npm run slides`): presentación en el proyector y vista del orador en tu pantalla.
 
@@ -62,6 +63,25 @@ npm run slides                       # abre http://localhost:5173/slides/
 - Navega desde la **vista del orador**: la presentación la sigue (mismo navegador, `BroadcastChannel`, sin internet). Si recargas la presentación con la vista del orador abierta, retoma la slide actual.
 - La vista del orador muestra la slide actual, la siguiente, las notas (`slides/notes/<id>.md`), un cronómetro y la hora.
 - Al terminar (`vamos`), pasa a la tienda en `acto-1` y sigue el guion del Acto 1 desde el minuto 9. El presupuesto es estricto: si una slide se alarga, recorta en la siguiente, no en la práctica.
+
+## Publicar la guía en vivo
+
+La guía (`/guide/`) muestra `docs/*.md` como una página por acto, con tiempos, casillas de avance, botones de copiar y la caja "¿Te quedaste atrás?". Localmente: `npm run guide` o `http://localhost:5173/guide/` con `npm run dev`.
+
+Los tags `acto-1`…`final` son anteriores a la guía y no la incluyen, por eso se publica aparte como sitio estático compilado desde `main`. Publicarla no mueve ni reescribe ningún tag.
+
+**GitHub Pages (una sola vez):**
+
+1. Sube `main` al repositorio público (el flujo `.github/workflows/deploy-guide.yml` viaja con él).
+2. En GitHub: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+3. Ejecuta el flujo **Deploy guide** desde la pestaña **Actions** (o haz push a `main` con cambios en `docs/` o `guide/`).
+4. La guía queda en `https://<usuario>.github.io/<repo>/`. Copia esa URL en `guideUrl` de `slides/src/talk.ts`.
+
+El flujo compila con `npm run build:guide`, verifica que el build no contenga slides ni notas del orador y publica solo `dist-guide/`.
+
+**Otro hosting estático:** `npm run build:guide` y sube `dist-guide/` tal cual. La base es relativa (`./`), así que funciona en la raíz o en una subcarpeta; `GUIDE_BASE=/taller/ npm run build:guide` la fija si tu hosting lo necesita. Para probarla localmente: `npm run preview:guide`.
+
+**Actualizarla:** edita `docs/*.md` en `main` y vuelve a publicar. El avance de cada asistente vive en su navegador, con claves por paso, así que sobrevive a una nueva publicación mientras los títulos de los pasos no cambien.
 
 ## Desplegar el proxy del instructor
 

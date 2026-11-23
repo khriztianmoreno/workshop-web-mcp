@@ -636,6 +636,7 @@ function Mision() {
 
 function Setup() {
   const room: { icon: IconName; label: string; value: string }[] = [
+    { icon: 'menu_book', label: 'Guía', value: TALK.guideUrl },
     { icon: 'fork_right', label: 'Repo', value: TALK.repoUrl },
     { icon: 'key', label: 'Proxy', value: TALK.proxyUrl },
     { icon: 'wifi', label: 'Wi-Fi', value: TALK.wifi },

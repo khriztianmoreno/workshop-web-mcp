@@ -1,0 +1,70 @@
+# Publishes the live workshop guide (/guide, built from docs/*.md) to GitHub Pages.
+#
+# Only the static guide (dist-guide/) is published: no store, no slides, no
+# speaker notes, no .env. The act tags (acto-1…final) are not touched; the guide
+# is built from main, so it can be updated after the tags exist.
+#
+# Setup (one time): Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# The site is served at https://<owner>.github.io/<repo>/ (relative base, see vite.guide.config.ts).
+name: Deploy guide
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'guide/**'
+      - 'vite.guide.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-guide.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-guide
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build static guide
+        run: npm run build:guide
+
+      # The guide is the only thing published: fail if anything else slipped in.
+      - name: Check the build only contains the guide
+        run: |
+          test -f dist-guide/index.html
+          test ! -e dist-guide/slides
+          if grep -rlE "\*\*Guion:\*\*|\*\*Transición:\*\*" dist-guide --include=*.js --include=*.html; then
+            echo "::error::Unexpected content in the guide build"
+            exit 1
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-guide
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

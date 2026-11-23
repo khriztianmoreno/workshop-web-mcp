@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { guideContent } from './guide/build/content.ts';
 
 const page = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
@@ -13,7 +14,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     // Tailwind only processes slides/src/deck.css (the store's CSS has no Tailwind directives).
-    plugins: [react(), tailwindcss()],
+    // guideContent renders docs/*.md for the /guide page at build time.
+    plugins: [react(), tailwindcss(), guideContent(page('./docs'))],
     server: {
       port: 5173,
       proxy: {
@@ -21,12 +23,13 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      // Multi-page: the store, plus the opening deck (/slides/) and its speaker view.
+      // Multi-page: the store, the opening deck (/slides/) with its speaker view, and the live guide (/guide/).
       rolldownOptions: {
         input: {
           main: page('./index.html'),
           slides: page('./slides/index.html'),
           speaker: page('./slides/speaker.html'),
+          guide: page('./guide/index.html'),
         },
       },
     },
