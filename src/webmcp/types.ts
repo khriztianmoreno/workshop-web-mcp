@@ -41,14 +41,24 @@ export interface RegisterToolOptions {
   exposedTo?: string[];
 }
 
+/**
+ * What getTools() returns. Native Chrome returns ONLY { name, title, description, inputSchema, origin, window }:
+ * annotations are optional here. Agent code reads them through normalizeTool() (./annotations.ts).
+ */
 export interface RegisteredTool {
   name: string;
   title?: string;
   description: string;
   inputSchema?: JsonSchema;
   outputSchema?: JsonSchema;
-  annotations: Required<ToolAnnotations>;
+  annotations?: ToolAnnotations;
   origin: string;
+  window?: Window;
+}
+
+/** A RegisteredTool after normalizeTool(): every hint present, missing ones are false. */
+export interface AnnotatedTool extends RegisteredTool {
+  annotations: Required<ToolAnnotations>;
 }
 
 export interface GetToolsOptions {

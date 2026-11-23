@@ -123,7 +123,8 @@ Tabla WebMCP vs. MCP de servidor, checklist de producción (origin trial, `expos
 
 - Panel del agente siempre visible: las tarjetas de herramientas **son** la explicación.
 - Abre las tarjetas (`<details>`) para mostrar argumentos y resultados en momentos clave.
-- DevTools → Console: `[webmcp] mode: polyfill` (o `native`).
+- DevTools → Console: `[webmcp] mode: polyfill` (o `native`). La insignia de la cabecera dice lo mismo: "WebMCP nativo", "WebMCP polyfill" o "WebMCP polyfill (forzado)".
+- Para comparar ambos caminos en vivo con Chrome nativo, abre una segunda pestaña con `http://localhost:5173/?webmcp=polyfill`.
 - En el Acto 4, el detalle del producto con la reseña maliciosa.
 
 ## Plan B (fallbacks)
@@ -150,6 +151,7 @@ Tabla WebMCP vs. MCP de servidor, checklist de producción (origin trial, `expos
 | Panel con 0 herramientas | `storeTools` vacío | `src/webmcp/tools/index.ts` |
 | `Error: TODO(acto-N)` en una tarjeta | Herramienta registrada sin implementar | Completar `execute` o quitarla del índice |
 | `document.modelContext` undefined | Acceso por IP con http | Usar `localhost` |
+| Con WebMCP nativo falta "consecuente"/"no confiable" o sale `reading 'consequentialHint'` | El `getTools()` nativo de Chrome no devuelve `annotations` | Ya está cubierto: el adaptador de `src/webmcp/polyfill.ts` las recuerda al registrar. Para comparar, abre `?webmcp=polyfill` (la insignia dice "WebMCP polyfill (forzado)") |
 | El agente no reconoce el prompt (modo simulado) | Texto distinto al guion | Usar los botones de sugerencias |
 | Gemini elige otro producto o color | No determinismo | Explicarlo como parte de la lección; usar modo simulado para la demo |
 | Puerto 5173 ocupado | Otra instancia de Vite | Cerrar la otra o usar el puerto que proponga Vite |

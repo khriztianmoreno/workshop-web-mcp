@@ -1,3 +1,4 @@
+import { normalizeAnnotations } from './annotations';
 import type {
   ExecuteToolOptions,
   GetToolsOptions,
@@ -6,19 +7,23 @@ import type {
   ModelContextTool,
   RegisteredTool,
   RegisterToolOptions,
+  ToolAnnotations,
 } from './types';
 
 /**
  * Spec-shaped WebMCP polyfill + installer.
  *
- * installWebMcp() decides between three modes:
+ * installWebMcp() decides between these modes:
  *  - "native":         the browser implements document.modelContext with getTools/executeTool.
+ *                      A thin adapter re-attaches the annotations that native getTools() drops.
  *  - "native-wrapped": the browser implements registerTool but not getTools/executeTool
  *                      (older Chrome builds). Tools are registered natively (so the browser's
  *                      own agent sees them) AND mirrored into a local registry so the in-page
  *                      chat panel can list and execute them.
  *  - "polyfill":       no native support. A local implementation is installed on
  *                      document.modelContext. Only the in-page chat panel can use the tools.
+ *  - "polyfill-forced": like "polyfill", but chosen with ?webmcp=polyfill even though the
+ *                      browser has native support (instructor switch to compare both paths).
  */
 
 const TOOL_NAME_PATTERN = /^[A-Za-z0-9_.-]{1,128}$/;
@@ -97,12 +102,7 @@ function toRegisteredTool(entry: Entry): RegisteredTool {
     description: tool.description,
     inputSchema: tool.inputSchema,
     outputSchema: tool.outputSchema,
-    annotations: {
-      readOnlyHint: tool.annotations?.readOnlyHint ?? false,
-      untrustedContentHint: tool.annotations?.untrustedContentHint ?? false,
-      consequentialHint: tool.annotations?.consequentialHint ?? false,
-      debugging: tool.annotations?.debugging ?? false,
-    },
+    annotations: normalizeAnnotations(tool.annotations),
     origin: currentOrigin(),
   };
 }
@@ -235,7 +235,85 @@ export class NativeWrappedModelContext extends PolyfillModelContext {
   }
 }
 
-export type WebMcpMode = 'native' | 'native-wrapped' | 'polyfill';
+/**
+ * Adapter for a complete native implementation. Chrome's getTools() returns only
+ * { name, title, description, inputSchema, origin, window } — the annotations given to
+ * registerTool() are dropped, so the in-page agent would lose its consequentialHint
+ * confirmation and untrustedContentHint fencing. This adapter keeps a side registry of
+ * annotations by tool name (forgotten when the registration signal aborts) and merges it
+ * back into getTools(). Everything else goes straight to the browser.
+ */
+interface AnnotationRecord {
+  annotations: ToolAnnotations;
+  live: boolean;
+}
+
+export class NativeAnnotatedModelContext implements ModelContext {
+  readonly #native: ModelContext;
+  readonly #annotations = new Map<string, AnnotationRecord>();
+
+  constructor(native: ModelContext) {
+    this.#native = native;
+  }
+
+  registerTool(tool: ModelContextTool, options: RegisterToolOptions = {}): Promise<void> {
+    const name = tool?.name;
+    const record: AnnotationRecord | undefined =
+      typeof name === 'string' && !options.signal?.aborted ? { annotations: { ...tool.annotations }, live: true } : undefined;
+    const previous = record ? this.#annotations.get(name) : undefined;
+    if (record) {
+      this.#annotations.set(name, record);
+      options.signal?.addEventListener('abort', () => this.#forget(name, record), { once: true });
+    }
+
+    let registration: Promise<void>;
+    try {
+      registration = Promise.resolve(this.#native.registerTool(tool, options));
+    } catch (error) {
+      registration = Promise.reject(error);
+    }
+    return registration.catch((error: unknown) => {
+      // The browser refused it (duplicate name, aborted...): keep whatever registration is still live.
+      if (record) {
+        this.#forget(name, record);
+        if (previous?.live && !this.#annotations.has(name)) this.#annotations.set(name, previous);
+      }
+      throw error;
+    });
+  }
+
+  async getTools(options?: GetToolsOptions): Promise<RegisteredTool[]> {
+    const tools = await this.#native.getTools(options);
+    return tools.map((tool) => {
+      const record = this.#annotations.get(tool.name);
+      // Annotations reported by the browser itself (if a future build returns them) win.
+      return record ? { ...tool, annotations: { ...record.annotations, ...tool.annotations } } : tool;
+    });
+  }
+
+  executeTool(tool: RegisteredTool | string, input?: object, options?: ExecuteToolOptions): Promise<string> {
+    return this.#native.executeTool(tool, input, options);
+  }
+
+  addEventListener(...args: Parameters<EventTarget['addEventListener']>): void {
+    this.#native.addEventListener(...args);
+  }
+
+  removeEventListener(...args: Parameters<EventTarget['removeEventListener']>): void {
+    this.#native.removeEventListener(...args);
+  }
+
+  dispatchEvent(event: Event): boolean {
+    return this.#native.dispatchEvent(event);
+  }
+
+  #forget(name: string, record: AnnotationRecord): void {
+    record.live = false;
+    if (this.#annotations.get(name) === record) this.#annotations.delete(name);
+  }
+}
+
+export type WebMcpMode = 'native' | 'native-wrapped' | 'polyfill' | 'polyfill-forced';
 
 export interface InstallResult {
   mode: WebMcpMode;
@@ -246,8 +324,24 @@ function defineOnDocument(modelContext: ModelContext): void {
   Object.defineProperty(document, 'modelContext', { value: modelContext, configurable: true, writable: false });
 }
 
-export function installWebMcp(): InstallResult {
+/** Instructor switch: ?webmcp=polyfill forces the polyfill even when the browser has native WebMCP. */
+export function isPolyfillForced(search: string = typeof location !== 'undefined' ? location.search : ''): boolean {
+  return new URLSearchParams(search).get('webmcp') === 'polyfill';
+}
+
+export interface InstallOptions {
+  /** Defaults to the ?webmcp=polyfill query param. */
+  forcePolyfill?: boolean;
+}
+
+export function installWebMcp({ forcePolyfill = isPolyfillForced() }: InstallOptions = {}): InstallResult {
   const native = (document.modelContext ?? navigator.modelContext) as Partial<ModelContext> | undefined;
+
+  if (forcePolyfill) {
+    const modelContext = new PolyfillModelContext();
+    defineOnDocument(modelContext);
+    return { mode: 'polyfill-forced', modelContext };
+  }
 
   if (!native || typeof native.registerTool !== 'function') {
     const modelContext = new PolyfillModelContext();
@@ -256,8 +350,10 @@ export function installWebMcp(): InstallResult {
   }
 
   if (typeof native.getTools === 'function' && typeof native.executeTool === 'function') {
-    if (!document.modelContext) defineOnDocument(native as ModelContext);
-    return { mode: 'native', modelContext: native as ModelContext };
+    // Same spec surface for attendees (document.modelContext.registerTool), annotations kept for the agent.
+    const modelContext = new NativeAnnotatedModelContext(native as ModelContext);
+    defineOnDocument(modelContext);
+    return { mode: 'native', modelContext };
   }
 
   const modelContext = new NativeWrappedModelContext(native as LegacyNativeContext);

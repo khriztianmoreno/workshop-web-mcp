@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { installWebMcp, NativeWrappedModelContext, PolyfillModelContext, validateInput } from './polyfill';
+import { FakeNativeModelContext } from './fake-native';
+import { installWebMcp, isPolyfillForced, NativeWrappedModelContext, PolyfillModelContext, validateInput } from './polyfill';
 import type { ModelContextTool, ToolEvent } from './types';
 
 function echoTool(name = 'echo', overrides: Partial<ModelContextTool> = {}): ModelContextTool {
@@ -142,12 +143,16 @@ describe('installWebMcp', () => {
     expect(document.modelContext).toBe(modelContext);
   });
 
-  it('uses a complete native implementation as-is', () => {
+  it('uses a complete native implementation through a thin annotations adapter', async () => {
     const native = new PolyfillModelContext();
     Object.defineProperty(document, 'modelContext', { value: native, configurable: true });
-    const { mode, modelContext } = installWebMcp();
+    const { mode, modelContext } = installWebMcp({ forcePolyfill: false });
     expect(mode).toBe('native');
-    expect(modelContext).toBe(native);
+    expect(document.modelContext).toBe(modelContext);
+
+    await modelContext.registerTool(echoTool());
+    expect(await native.getTools()).toHaveLength(1);
+    expect(await modelContext.executeTool('echo', { value: 'a' })).toBe('{"echoed":"a"}');
   });
 
   it('wraps an older native implementation without getTools/executeTool', async () => {
@@ -168,5 +173,112 @@ describe('installWebMcp', () => {
     controller.abort();
     expect(unregisterTool).toHaveBeenCalledWith('echo');
     expect(await modelContext.getTools()).toHaveLength(0);
+  });
+});
+
+describe('native WebMCP whose getTools() drops annotations (Chrome)', () => {
+  afterEach(() => {
+    delete (document as { modelContext?: unknown }).modelContext;
+  });
+
+  function installFakeNative() {
+    const native = new FakeNativeModelContext();
+    Object.defineProperty(document, 'modelContext', { value: native, configurable: true });
+    const installed = installWebMcp({ forcePolyfill: false });
+    return { native, ...installed };
+  }
+
+  it('the fake mirrors Chrome: no annotations in getTools()', async () => {
+    const native = new FakeNativeModelContext();
+    await native.registerTool(echoTool('buy', { annotations: { consequentialHint: true } }));
+    const [tool] = await native.getTools();
+    expect(Object.keys(tool).sort()).toEqual(['description', 'inputSchema', 'name', 'origin', 'title', 'window']);
+  });
+
+  it('records annotations at registration and merges them back into getTools()', async () => {
+    const { mode, modelContext } = installFakeNative();
+    expect(mode).toBe('native');
+
+    await document.modelContext!.registerTool(echoTool('buy', { annotations: { consequentialHint: true } }));
+    await document.modelContext!.registerTool(echoTool('plain'));
+
+    const tools = await modelContext.getTools();
+    expect(tools.find((t) => t.name === 'buy')).toMatchObject({ origin: location.origin, annotations: { consequentialHint: true } });
+    expect(tools.find((t) => t.name === 'plain')?.annotations ?? {}).not.toHaveProperty('consequentialHint', true);
+  });
+
+  it('executes merged tools on the native context', async () => {
+    const { native, modelContext } = installFakeNative();
+    await modelContext.registerTool(echoTool('echo', { annotations: { readOnlyHint: true } }));
+    const [tool] = await modelContext.getTools();
+    expect(await modelContext.executeTool(tool, { value: 'x' })).toBe('{"echoed":"x"}');
+    expect(native.executed).toEqual(['echo']);
+  });
+
+  it('forgets the recorded annotations when the registration signal aborts', async () => {
+    const { native, modelContext } = installFakeNative();
+    const first = new AbortController();
+    await modelContext.registerTool(echoTool('buy', { annotations: { consequentialHint: true } }), { signal: first.signal });
+    first.abort();
+    expect(await modelContext.getTools()).toEqual([]);
+
+    // Same name, no annotations this time: nothing stale may leak back in.
+    await native.registerTool(echoTool('buy'));
+    const [tool] = await modelContext.getTools();
+    expect(tool.annotations).toBeUndefined();
+  });
+
+  it('keeps the live registration annotations when a duplicate registration is rejected', async () => {
+    const { modelContext } = installFakeNative();
+    await modelContext.registerTool(echoTool('buy', { annotations: { consequentialHint: true } }));
+    await expect(modelContext.registerTool(echoTool('buy', { annotations: { readOnlyHint: true } }))).rejects.toThrow(/Duplicate/);
+    const [tool] = await modelContext.getTools();
+    expect(tool.annotations).toMatchObject({ consequentialHint: true });
+    expect(tool.annotations?.readOnlyHint).not.toBe(true);
+  });
+
+  it('forwards toolchange events from the native context', async () => {
+    const { modelContext } = installFakeNative();
+    const onChange = vi.fn();
+    modelContext.addEventListener('toolchange', onChange);
+    await modelContext.registerTool(echoTool());
+    expect(onChange).toHaveBeenCalledOnce();
+    modelContext.removeEventListener('toolchange', onChange);
+  });
+});
+
+describe('forced polyfill switch (?webmcp=polyfill)', () => {
+  afterEach(() => {
+    delete (document as { modelContext?: unknown }).modelContext;
+  });
+
+  it('reads the query param', () => {
+    expect(isPolyfillForced('?webmcp=polyfill')).toBe(true);
+    expect(isPolyfillForced('?foo=1&webmcp=polyfill')).toBe(true);
+    expect(isPolyfillForced('?webmcp=native')).toBe(false);
+    expect(isPolyfillForced('')).toBe(false);
+  });
+
+  it('installs the polyfill over a native implementation when forced', async () => {
+    const native = new FakeNativeModelContext();
+    Object.defineProperty(document, 'modelContext', { value: native, configurable: true });
+
+    const { mode, modelContext } = installWebMcp({ forcePolyfill: true });
+
+    expect(mode).toBe('polyfill-forced');
+    expect(modelContext).toBeInstanceOf(PolyfillModelContext);
+    expect(document.modelContext).toBe(modelContext);
+    await modelContext.registerTool(echoTool());
+    expect(await native.getTools()).toEqual([]);
+  });
+
+  it('defaults to the current URL', () => {
+    window.history.replaceState(null, '', '/?webmcp=polyfill');
+    try {
+      Object.defineProperty(document, 'modelContext', { value: new FakeNativeModelContext(), configurable: true });
+      expect(installWebMcp().mode).toBe('polyfill-forced');
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
   });
 });

@@ -35,4 +35,19 @@ describe('<App /> smoke test', () => {
     await act(async () => root.unmount());
     expect(await modelContext.getTools()).toEqual([]);
   });
+
+  it('shows which WebMCP path is active in the badge', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ok: true, mode: 'mock' }))));
+    installWebMcp({ forcePolyfill: true });
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => root.render(<App webMcpMode="polyfill-forced" />));
+    expect(container.querySelector('.pill--mode')?.textContent).toBe('WebMCP polyfill (forzado)');
+
+    await act(async () => root.render(<App webMcpMode="native" />));
+    expect(container.querySelector('.pill--mode')?.textContent).toBe('WebMCP nativo');
+    await act(async () => root.unmount());
+  });
 });

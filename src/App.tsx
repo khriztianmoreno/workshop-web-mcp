@@ -17,6 +17,7 @@ const MODE_LABEL: Record<WebMcpMode, string> = {
   native: 'WebMCP nativo',
   'native-wrapped': 'WebMCP nativo (adaptado)',
   polyfill: 'WebMCP polyfill',
+  'polyfill-forced': 'WebMCP polyfill (forzado)',
 };
 
 export function App({ webMcpMode }: { webMcpMode: WebMcpMode }) {

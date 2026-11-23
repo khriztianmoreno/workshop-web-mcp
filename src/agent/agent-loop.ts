@@ -6,7 +6,8 @@ import type {
   FunctionCallPart,
   ToolResultPart,
 } from '../../shared/agent-protocol';
-import type { ModelContext, RegisteredTool } from '../webmcp/types';
+import { normalizeTool } from '../webmcp/annotations';
+import type { AnnotatedTool, ModelContext, RegisteredTool } from '../webmcp/types';
 import { toModelResponse } from './untrusted';
 
 /**
@@ -34,7 +35,7 @@ export interface AgentLoopOptions {
   history: ChatMessage[];
   sendChat: (request: ChatRequest, signal?: AbortSignal) => Promise<ChatResponse>;
   /** Agent-side guard for tools flagged consequentialHint. Return true to allow. */
-  confirmTool: (call: FunctionCallPart, tool: RegisteredTool) => Promise<boolean>;
+  confirmTool: (call: FunctionCallPart, tool: AnnotatedTool) => Promise<boolean>;
   onModelText?: (text: string, response: ChatResponse) => void;
   onToolCall?: (event: ToolCallEvent) => void;
   /** Called right before executeTool (used for visual feedback). */
@@ -58,7 +59,8 @@ export async function runAgentTurn(options: AgentLoopOptions): Promise<ChatMessa
   const { modelContext, history, sendChat, signal, maxSteps = MAX_AGENT_STEPS } = options;
 
   for (let step = 0; step < maxSteps; step += 1) {
-    const tools = await modelContext.getTools();
+    // Native WebMCP may omit annotations: normalize once, so every guard below sees explicit hints.
+    const tools = (await modelContext.getTools()).map(normalizeTool);
     const response = await sendChat({ messages: history, tools: tools.map(toDeclaration) }, signal);
 
     history.push({ role: 'model', text: response.text, functionCalls: response.functionCalls, rawParts: response.rawParts });
@@ -78,7 +80,7 @@ export async function runAgentTurn(options: AgentLoopOptions): Promise<ChatMessa
   return history;
 }
 
-async function runToolCall(call: FunctionCallPart, tools: RegisteredTool[], options: AgentLoopOptions): Promise<ToolResultPart> {
+async function runToolCall(call: FunctionCallPart, tools: AnnotatedTool[], options: AgentLoopOptions): Promise<ToolResultPart> {
   callSequence += 1;
   const callKey = `call-${callSequence}`;
   const args = call.args ?? {};

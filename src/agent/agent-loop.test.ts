@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ChatMessage, ChatRequest, ChatResponse } from '../../shared/agent-protocol';
-import { PolyfillModelContext } from '../webmcp/polyfill';
-import { runAgentTurn } from './agent-loop';
+import { FakeNativeModelContext } from '../webmcp/fake-native';
+import { installWebMcp, PolyfillModelContext } from '../webmcp/polyfill';
+import type { ModelContext } from '../webmcp/types';
+import { runAgentTurn, type AgentLoopOptions } from './agent-loop';
 
 function scripted(...responses: Omit<ChatResponse, 'mode'>[]) {
   const requests: ChatRequest[] = [];
@@ -12,8 +14,7 @@ function scripted(...responses: Omit<ChatResponse, 'mode'>[]) {
   return { sendChat, requests };
 }
 
-async function setup() {
-  const mc = new PolyfillModelContext();
+async function setup(mc: ModelContext = new PolyfillModelContext()) {
   await mc.registerTool({
     name: 'read_reviews',
     description: 'Reviews',
@@ -65,5 +66,67 @@ describe('runAgentTurn (in-browser agent loop)', () => {
     await runAgentTurn({ modelContext: mc, history, sendChat, confirmTool: async () => true, maxSteps: 3 });
     expect(sendChat).toHaveBeenCalledTimes(3);
     expect(history.at(-1)).toMatchObject({ role: 'model', text: expect.stringContaining('3 pasos') });
+  });
+});
+
+describe('runAgentTurn on native WebMCP (getTools() without annotations)', () => {
+  afterEach(() => {
+    delete (document as { modelContext?: unknown }).modelContext;
+  });
+
+  function installNative() {
+    const native = new FakeNativeModelContext();
+    Object.defineProperty(document, 'modelContext', { value: native, configurable: true });
+    return installWebMcp({ forcePolyfill: false }).modelContext;
+  }
+
+  it('does not crash on a raw native context and treats missing annotations as all false', async () => {
+    const { mc, buy } = await setup(new FakeNativeModelContext() as unknown as ModelContext);
+    const { sendChat, requests } = scripted({ functionCalls: [{ id: '1', name: 'buy', args: {} }] }, { text: 'ok', functionCalls: [] });
+    const confirmTool = vi.fn(async () => true);
+
+    await runAgentTurn({ modelContext: mc, history: [{ role: 'user', text: 'compra' }], sendChat, confirmTool });
+
+    expect(buy).toHaveBeenCalledOnce();
+    expect(JSON.stringify(requests[1].messages.at(-1))).toContain('"ok":true');
+  });
+
+  it('still asks the agent-side guard for consequentialHint tools', async () => {
+    const { mc, buy } = await setup(installNative());
+    const { sendChat, requests } = scripted({ functionCalls: [{ id: '1', name: 'buy', args: {} }] });
+    const confirmTool = vi.fn<AgentLoopOptions['confirmTool']>(async () => false);
+
+    await runAgentTurn({ modelContext: mc, history: [{ role: 'user', text: 'compra' }], sendChat, confirmTool });
+
+    expect(confirmTool).toHaveBeenCalledOnce();
+    expect(confirmTool.mock.calls[0][1]).toMatchObject({ name: 'buy', annotations: { consequentialHint: true } });
+    expect(buy).not.toHaveBeenCalled();
+    expect(JSON.stringify(requests[1].messages.at(-1))).toContain('declined');
+  });
+
+  it('runs a consequentialHint tool on the native context once the user allows it', async () => {
+    const { mc, buy } = await setup(installNative());
+    const { sendChat } = scripted({ functionCalls: [{ id: '1', name: 'buy', args: {} }] });
+    await runAgentTurn({ modelContext: mc, history: [{ role: 'user', text: 'compra' }], sendChat, confirmTool: async () => true });
+    expect(buy).toHaveBeenCalledOnce();
+  });
+
+  it('still fences untrustedContentHint output', async () => {
+    const { mc } = await setup(installNative());
+    const { sendChat, requests } = scripted({ functionCalls: [{ id: '1', name: 'read_reviews', args: {} }] }, { text: 'ok', functionCalls: [] });
+    const events: unknown[] = [];
+
+    await runAgentTurn({
+      modelContext: mc,
+      history: [{ role: 'user', text: 'reseñas' }],
+      sendChat,
+      confirmTool: async () => true,
+      onToolCall: (event) => events.push(event),
+    });
+
+    const toolMessage = requests[1].messages.find((m) => m.role === 'tool');
+    expect(toolMessage?.role === 'tool' && toolMessage.results[0].response).toMatchObject({ untrusted: true });
+    expect(JSON.stringify(toolMessage)).toContain('UNTRUSTED_TOOL_OUTPUT');
+    expect(events.at(-1)).toMatchObject({ status: 'done', untrusted: true });
   });
 });

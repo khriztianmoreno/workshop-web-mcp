@@ -1,5 +1,5 @@
 import { UNTRUSTED_CLOSE, UNTRUSTED_OPEN } from '../../shared/agent-protocol';
-import type { RegisteredTool } from '../webmcp/types';
+import type { AnnotatedTool } from '../webmcp/types';
 
 function parseMaybeJson(output: string): unknown {
   try {
@@ -14,7 +14,7 @@ function parseMaybeJson(output: string): unknown {
  * Outputs of tools flagged with untrustedContentHint are fenced and labeled as DATA,
  * so the model (and the system prompt) can tell instructions from content.
  */
-export function toModelResponse(tool: Pick<RegisteredTool, 'annotations'>, output: string): Record<string, unknown> {
+export function toModelResponse(tool: Pick<AnnotatedTool, 'annotations'>, output: string): Record<string, unknown> {
   if (tool.annotations.untrustedContentHint) {
     return {
       untrusted: true,

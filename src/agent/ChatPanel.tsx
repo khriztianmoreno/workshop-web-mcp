@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { ChatMessage, FunctionCallPart, HealthResponse } from '../../shared/agent-protocol';
 import { DEMO_PROMPT_LABELS, DEMO_PROMPTS, type DemoPromptKey } from '../../shared/demo-prompts';
 import { reportAgentToolCall } from '../webmcp/activity';
-import type { RegisteredTool } from '../webmcp/types';
+import { normalizeTool } from '../webmcp/annotations';
+import type { AnnotatedTool } from '../webmcp/types';
 import { runAgentTurn, type ToolCallEvent } from './agent-loop';
 import { getHealth, postChat } from './api';
 
@@ -14,21 +15,24 @@ type ChatItem =
 
 interface PendingGuard {
   call: FunctionCallPart;
-  tool: RegisteredTool;
+  tool: AnnotatedTool;
   resolve: (allowed: boolean) => void;
 }
 
 let itemSequence = 0;
 const nextId = () => `item-${++itemSequence}`;
 
-function useRegisteredTools(): RegisteredTool[] {
-  const [tools, setTools] = useState<RegisteredTool[]>([]);
+function useRegisteredTools(): AnnotatedTool[] {
+  const [tools, setTools] = useState<AnnotatedTool[]>([]);
   useEffect(() => {
     const modelContext = document.modelContext ?? navigator.modelContext;
     if (!modelContext) return;
     let active = true;
     const refresh = () => {
-      modelContext.getTools().then((list) => active && setTools(list), () => active && setTools([]));
+      modelContext.getTools().then(
+        (list) => active && setTools(list.map(normalizeTool)),
+        () => active && setTools([]),
+      );
     };
     refresh();
     modelContext.addEventListener('toolchange', refresh);
