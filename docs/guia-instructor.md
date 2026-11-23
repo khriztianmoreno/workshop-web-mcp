@@ -21,7 +21,7 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 - [ ] Enviar `docs/00-prework.md` (correo + canal del evento).
 - [ ] Publicar el repositorio y verificar que los tags `acto-1`…`final` existen en el remoto.
 - [ ] Crear una clave de Gemini dedicada al taller y revisar su cuota.
-- [ ] Desplegar el **proxy del instructor** (ver abajo) y probar `GET /api/health`.
+- [ ] Desplegar el **proxy del instructor** con `WORKSHOP_TOKEN` (ver "Hostear el proxy para la sala") y probarlo con curl.
 - [ ] Publicar la **guía en vivo** (ver "Publicar la guía en vivo") y abrirla en el celular para revisarla.
 
 ### El día anterior
@@ -83,16 +83,80 @@ El flujo compila con `npm run build:guide`, verifica que el build no contenga sl
 
 **Actualizarla:** edita `docs/*.md` en `main` y vuelve a publicar. El avance de cada asistente vive en su navegador, con claves por paso, así que sobrevive a una nueva publicación mientras los títulos de los pasos no cambien.
 
-## Desplegar el proxy del instructor
+## Hostear el proxy para la sala
 
-En cualquier VM o servicio con Node 22:
+El proxy publicado en internet gasta **tu** clave de Gemini. Sin protección, cualquiera que encuentre la URL puede usarlo como relevo gratuito. Estas medidas lo acotan para unas 40 personas durante el taller.
+
+### 1. La clave
+
+- Crea una clave de Gemini **dedicada al taller**, en un proyecto aparte.
+- Configura un **tope de gasto o cuota** en ese proyecto (Google Cloud → presupuestos y alertas, o límites de cuota de la API). Es la defensa final: todo lo demás solo reduce el abuso.
+- **Revócala al terminar el evento**, aunque apagues el servidor.
+
+### 2. Desplegar
+
+El proxy endurecido vive en `main` (los tags de los actos no cambian). En cualquier VM o servicio con Node 22, detrás de HTTPS:
 
 ```bash
-git clone <repo> && cd workshop-web-mcp && git switch final && npm ci
-GEMINI_API_KEY=... ALLOWED_ORIGINS=http://localhost:5173 RATE_LIMIT_PER_MINUTE=30 PORT=8787 npm run server
+git clone <repo> && cd workshop-web-mcp && git switch main && npm ci
+GEMINI_API_KEY=... \
+WORKSHOP_TOKEN=<token-de-la-sala> \
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 \
+TRUST_PROXY=1 \
+PORT=8787 npm run server
 ```
 
-Los asistentes ponen en su `.env`: `AGENT_BASE_URL=https://tu-proxy.example`. Vite reenvía `/api` a esa URL, así que no hay problemas de CORS. Ponlo detrás de HTTPS y apágalo al terminar el evento.
+| Variable | Qué hace | Valor por defecto |
+| --- | --- | --- |
+| `WORKSHOP_TOKEN` | Token compartido de la sala. Sin él, el proxy queda abierto (solo para desarrollo local). | vacío (sin token) |
+| `ALLOWED_ORIGINS` | Orígenes del navegador permitidos por CORS. Los asistentes abren la app en `localhost:5173`, así que el valor por defecto ya sirve. | `http://localhost:5173,http://127.0.0.1:5173` |
+| `TRUST_PROXY` | Número de proxies inversos de confianza delante del servidor (balanceador, Cloud Run, Render, Fly, nginx). Con `1` se usa la entrada más a la derecha de `x-forwarded-for`. Déjalo vacío si el servidor recibe conexiones directas: si no, cualquiera falsifica su IP. | vacío (usa la IP del socket) |
+| `RATE_LIMIT_PER_MINUTE` | Límite por IP de cliente. Toda la sala puede salir por la misma IP (NAT del recinto). | `60` |
+| `RATE_LIMIT_GLOBAL_PER_MINUTE` | Límite total del proxy, sumando a todos. | `600` |
+| `MAX_BODY_BYTES` | Tamaño máximo del cuerpo de cada solicitud. | `65536` |
+| `MAX_MESSAGES` / `MAX_TEXT_CHARS` / `MAX_TOOLS` / `MAX_TOOL_SCHEMA_BYTES` | Topes de mensajes, caracteres por texto, herramientas y tamaño de cada esquema. | `60` / `8000` / `32` / `8192` |
+| `MAX_OUTPUT_TOKENS` | Tope de tokens generados por llamada (incluye el razonamiento). | `4096` |
+
+El modelo y el *system prompt* los fija el servidor; el cliente no puede cambiarlos. Las partes `rawParts` que devuelve el navegador se filtran: solo pasan texto, firmas de pensamiento y llamadas a funciones.
+
+Elige un token largo y sin caracteres especiales (letras, números y guiones), por ejemplo `devfest-bogota-7f3k9q2m`. No es un secreto frente a los asistentes: solo evita que cualquiera en internet use el proxy. Por eso el tope de gasto sigue siendo obligatorio.
+
+### 3. Qué ponen los asistentes
+
+El token va **en la ruta**, así los clientes de los tags `acto-1`…`acto-4` funcionan sin cambiar código: solo concatenan `/api/chat` a la URL base.
+
+```bash
+# .env del asistente (opción recomendada: Vite reenvía /api, sin CORS)
+AGENT_BASE_URL=https://tu-proxy.example/t/<token-de-la-sala>
+
+# Alternativa: el navegador llama directo al proxy (requiere CORS)
+VITE_AGENT_URL=https://tu-proxy.example/t/<token-de-la-sala>
+```
+
+Después de editar `.env`, hay que reiniciar `npm run dev`. `npm run check` confirma la conexión.
+
+Clientes propios también pueden enviar el token en una cabecera: `Authorization: Bearer <token>` o `x-workshop-token: <token>`.
+
+### 4. Probar con curl
+
+```bash
+P=https://tu-proxy.example
+T=<token-de-la-sala>
+BODY='{"messages":[{"role":"user","text":"hola"}],"tools":[]}'
+
+curl -s $P/api/health                                   # 200 {"ok":true,"mode":"gemini","model":"..."}
+curl -s -o /dev/null -w '%{http_code}\n' -H 'content-type: application/json' -d "$BODY" $P/api/chat          # 401
+curl -s -o /dev/null -w '%{http_code}\n' -H 'content-type: application/json' -d "$BODY" $P/t/$T/api/chat     # 200
+curl -s -o /dev/null -w '%{http_code}\n' -H "authorization: Bearer $T" -H 'content-type: application/json' -d "$BODY" $P/api/chat  # 200
+```
+
+> CORS no protege el proxy: solo lo respetan los navegadores. `curl` o un script lo ignoran. La protección real es el token, los límites y el tope de gasto de la clave.
+
+### 5. Durante y después
+
+- Si algo falla, el chat muestra un mensaje genérico con un `id`. Búscalo en los logs del servidor (`[proxy] <id> ...`) para ver el detalle.
+- Un 429 con "saturado" es el límite global; con "desde tu conexión", el límite por IP. Súbelos si la sala comparte una sola IP.
+- Al terminar: apaga el servidor y **revoca la clave**.
 
 ## Guion por acto
 
@@ -177,7 +241,7 @@ Tabla WebMCP vs. MCP de servidor, checklist de producción (origin trial, `expos
 | --- | --- |
 | Sin internet / Gemini caído | `AGENT_MODE=mock` en `.env` o `npm run server:mock` + `npm run dev:web`. La insignia dice "Modo simulado". |
 | Cuota de Gemini agotada | Pide a todos que usen modo simulado; tu proxy sigue para el proyector. |
-| Asistentes sin clave | `AGENT_BASE_URL=<proxy del instructor>` en `.env` y reiniciar `npm run dev`. |
+| Asistentes sin clave | `AGENT_BASE_URL=<proxy del instructor>/t/<token>` en `.env` y reiniciar `npm run dev`. |
 | Alguien muy atrasado | `git stash -u && git switch -c mi-acto-N acto-N && npm ci` |
 | `npm ci` lento por la red | Compartir `node_modules` comprimido por USB, o emparejar asistentes. |
 | Tu demo se rompe | Tienes la carpeta en `final`: `git switch final` y continúa. |
@@ -190,7 +254,9 @@ Tabla WebMCP vs. MCP de servidor, checklist de producción (origin trial, `expos
 | `EBADENGINE` en `npm ci` | Node < 22.12 | Instalar Node 22/24 LTS (nvm, fnm, Volta) |
 | Insignia "Proxy desconectado" | Proxy no arrancó, puerto ocupado | Ver la terminal `[proxy]`; `PORT=8788` en `.env` |
 | Error 502 en el chat | Clave inválida, sin red o cuota | `npm run server:mock` o proxy del instructor |
-| Error 429 en el chat | Límite de solicitudes del proxy | Esperar un minuto o subir `RATE_LIMIT_PER_MINUTE` |
+| Error 429 en el chat | Límite de solicitudes del proxy | Esperar un minuto o subir `RATE_LIMIT_PER_MINUTE` / `RATE_LIMIT_GLOBAL_PER_MINUTE` |
+| Error 401 en el chat | Falta el token o está mal escrito | `AGENT_BASE_URL=https://…/t/<token>` y reiniciar `npm run dev` |
+| Error 413 en el chat | Conversación demasiado larga | Botón "Nueva conversación" del panel |
 | "already registered" en consola | Hook sin `signal` o sin limpieza | Revisar `useWebMcpTools` |
 | Panel con 0 herramientas | `storeTools` vacío | `src/webmcp/tools/index.ts` |
 | `Error: TODO(acto-N)` en una tarjeta | Herramienta registrada sin implementar | Completar `execute` o quitarla del índice |

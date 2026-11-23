@@ -9,6 +9,12 @@ import {
 } from '@google/genai';
 import type { ChatMessage, ChatRequest, ChatResponse, FunctionCallPart } from '../shared/agent-protocol';
 import { SYSTEM_PROMPT } from './system-prompt';
+import { sanitizeRawParts } from './validation';
+
+export interface GeminiAgentOptions {
+  /** Hard cap on generated tokens per call (includes thinking tokens). */
+  maxOutputTokens: number;
+}
 
 /** Shown when Gemini keeps trying to call a tool the page does not have (e.g. Act 1, zero tools). */
 export const NO_TOOL_FALLBACK_TEXT =
@@ -80,9 +86,11 @@ export function toGeminiContents(messages: ChatMessage[]): Content[] {
       case 'user':
         return { role: 'user', parts: [{ text: message.text }] };
       case 'model': {
-        // Send provider parts back untouched: Gemini 3 needs its thought signatures.
-        if (Array.isArray(message.rawParts) && message.rawParts.length > 0) {
-          return { role: 'model', parts: message.rawParts as Part[] };
+        // Send provider parts back (Gemini 3 needs its thought signatures), but only the
+        // shapes Gemini itself returns: never client-supplied fileData, inlineData, etc.
+        const rawParts = sanitizeRawParts(message.rawParts);
+        if (rawParts.length > 0) {
+          return { role: 'model', parts: rawParts as Part[] };
         }
         const parts: Part[] = [];
         if (message.text) parts.push({ text: message.text });
@@ -102,7 +110,7 @@ export function toGeminiContents(messages: ChatMessage[]): Content[] {
   });
 }
 
-export function createGeminiAgent(apiKey: string, model: string) {
+export function createGeminiAgent(apiKey: string, model: string, { maxOutputTokens }: GeminiAgentOptions) {
   const ai = new GoogleGenAI({ apiKey });
 
   return async function geminiAgent(request: ChatRequest): Promise<ChatResponse> {
@@ -120,6 +128,7 @@ export function createGeminiAgent(apiKey: string, model: string) {
           contents,
           config: {
             systemInstruction,
+            maxOutputTokens,
             ...(functionDeclarations.length > 0
               ? { tools: [{ functionDeclarations }] }
               : // Zero tools (Act 1): forbid calls so the model answers in text instead of inventing one.

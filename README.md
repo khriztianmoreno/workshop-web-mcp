@@ -142,7 +142,7 @@ npm test
 
 - **`src/webmcp/`**: polyfill con la forma de la especificación, hook de registro, herramientas y retroalimentación visual.
 - **`src/agent/`**: el ciclo del agente corre **en el navegador**: `getTools()` → modelo → `executeTool()` → resultados → repetir (máximo 8 pasos).
-- **`server/`**: proxy mínimo. Llama a Gemini una vez por solicitud. Nunca expone la clave.
+- **`server/`**: proxy mínimo. Llama a Gemini una vez por solicitud. Nunca expone la clave. Modelo y *system prompt* fijos en el servidor; token de sala y límites de tamaño y frecuencia para hostearlo.
 - **`src/store/`**: estado y acciones compartidas. Las herramientas **reutilizan** las mismas acciones que los botones.
 
 ### Sobre la especificación
@@ -160,9 +160,28 @@ El código sigue el borrador del W3C WebML Community Group del 13 de noviembre d
 | --- | --- | --- |
 | Gemini | `GEMINI_API_KEY` definida en `.env` | `Gemini · gemini-3.8-flash` |
 | Simulado | Sin clave, `AGENT_MODE=mock` o `npm run server:mock` | `Modo simulado` |
-| Proxy del instructor | `AGENT_BASE_URL=https://…` en `.env` | Lo que reporte ese proxy |
+| Proxy del instructor | `AGENT_BASE_URL=https://…/t/<token>` en `.env` | Lo que reporte ese proxy |
 
 El modelo por defecto es `gemini-3.8-flash` (cámbialo con `GEMINI_MODEL`).
+
+## Hostear el proxy para la sala
+
+Para que los asistentes sin clave usen Gemini, el instructor publica el proxy de `main` en internet. Resumen (detalle completo en [`docs/guia-instructor.md`](docs/guia-instructor.md#hostear-el-proxy-para-la-sala)):
+
+- **Clave dedicada** al taller, con **tope de gasto o cuota** en su proyecto. **Revócala** al terminar el evento.
+- `WORKSHOP_TOKEN=<token>`: sin token válido, `/api/chat` responde 401. Sin la variable, el proxy queda abierto (desarrollo local y modo simulado).
+- `ALLOWED_ORIGINS`: por defecto `http://localhost:5173,http://127.0.0.1:5173`, que es donde los asistentes abren la app. CORS no frena a `curl`: la protección real es el token, los límites y el tope de gasto.
+- `TRUST_PROXY=1` solo si hay un balanceador o proxy inverso delante; así se usa `x-forwarded-for` para el límite por IP. Sin él se usa la IP del socket.
+- Límites: `RATE_LIMIT_PER_MINUTE` (por IP, `60`), `RATE_LIMIT_GLOBAL_PER_MINUTE` (`600`), `MAX_BODY_BYTES` (`65536`), `MAX_OUTPUT_TOKENS` (`4096`) y los topes de `env.example`.
+
+Los asistentes ponen el token en la ruta, así los tags `acto-1`…`acto-4` funcionan sin tocar código:
+
+```bash
+AGENT_BASE_URL=https://tu-proxy.example/t/<token>   # Vite reenvía /api (recomendado)
+VITE_AGENT_URL=https://tu-proxy.example/t/<token>   # el navegador llama directo
+```
+
+Prueba rápida: `curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -d '{"messages":[{"role":"user","text":"hola"}],"tools":[]}' https://tu-proxy.example/t/<token>/api/chat` debe dar `200`, y sin `/t/<token>`, `401`. Los errores del modelo llegan al chat como un mensaje genérico con un `id`; el detalle queda en el log del servidor.
 
 ## Solución de problemas
 

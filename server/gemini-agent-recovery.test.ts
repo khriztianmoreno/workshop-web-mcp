@@ -14,7 +14,7 @@ const { createGeminiAgent, NO_TOOL_FALLBACK_TEXT, NO_TOOLS_NOTE, EMPTY_REPLY_FAL
 const SECRET_PROMPT = '¿Qué cascos certificados ECE 22.06 hay en stock en talla M?';
 
 function makeAgent() {
-  return createGeminiAgent('key', 'gemini-test');
+  return createGeminiAgent('key', 'gemini-test', { maxOutputTokens: 4096 });
 }
 
 function request(toolNames: string[] = []): ChatRequest {
@@ -114,6 +114,7 @@ describe('gemini agent recovery', () => {
     const retry = generateContent.mock.calls[1][0];
     expect(retry.contents).toEqual(first.contents);
     expect(retry.config.tools).toEqual(first.config.tools);
+    expect(retry.config.maxOutputTokens).toBe(4096);
     expect(retry.config.systemInstruction).toContain(first.config.systemInstruction);
     expect(retry.config.systemInstruction).toContain('get_store_info');
     expect(retry.config.systemInstruction.length).toBeGreaterThan(first.config.systemInstruction.length);
