@@ -1,6 +1,10 @@
+import { fileURLToPath } from 'node:url';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
+
+const page = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -8,11 +12,22 @@ export default defineConfig(({ mode }) => {
   const agentTarget = env.AGENT_BASE_URL || `http://localhost:${env.PORT || 8787}`;
 
   return {
-    plugins: [react()],
+    // Tailwind only processes slides/src/deck.css (the store's CSS has no Tailwind directives).
+    plugins: [react(), tailwindcss()],
     server: {
       port: 5173,
       proxy: {
         '/api': { target: agentTarget, changeOrigin: true },
+      },
+    },
+    build: {
+      // Multi-page: the store, plus the opening deck (/slides/) and its speaker view.
+      rolldownOptions: {
+        input: {
+          main: page('./index.html'),
+          slides: page('./slides/index.html'),
+          speaker: page('./slides/speaker.html'),
+        },
       },
     },
     test: {

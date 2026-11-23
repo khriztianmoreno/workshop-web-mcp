@@ -44,11 +44,26 @@ npm run dev                      # abre http://localhost:5173
 | Comando | Qué hace |
 | --- | --- |
 | `npm run dev` | App + proxy con recarga en caliente |
+| `npm run slides` | Abre las slides de apertura (solo Vite, sin proxy) |
 | `npm run server:mock` | Solo el proxy, forzando el modo simulado |
 | `npm test` | Pruebas con Vitest |
 | `npm run typecheck` | TypeScript de la app y del servidor |
 | `npm run build` | Build de producción de la app |
 | `npm run check` | Verificación del entorno (Node, dependencias, `.env`, proxy) |
+
+## Slides de apertura
+
+Las slides que proyecta el instructor al inicio (≈15 min: el incidente, los conceptos y la dinámica del taller) viven en `slides/`, en la rama `main` (no en los tags de los actos).
+
+| URL (con `npm run dev` corriendo) | Qué es |
+| --- | --- |
+| [http://localhost:5173/slides/](http://localhost:5173/slides/) | La presentación (proyector) |
+| [http://localhost:5173/slides/speaker.html](http://localhost:5173/slides/speaker.html) | Vista del orador: notas, siguiente slide y cronómetro |
+
+- `npm run slides` levanta Vite y abre la presentación (si `npm run dev` ya ocupa el puerto 5173, Vite propone otro).
+- Navegación: flechas o espacio. **S** abre la vista del orador en una ventana aparte; ambas se sincronizan por `BroadcastChannel` (mismo navegador, sin red). En pantallas táctiles aparecen botones y gestos; `?touch` los fuerza.
+- Fuentes: `slides/src/slides.tsx` (contenido), `slides/notes/*.md` (notas del orador) y `slides/src/talk.ts` (datos del evento: completa repo, proxy y Wi-Fi antes de presentar).
+- Motor: [`@khriztianmoreno/speaker-kit`](https://www.npmjs.com/package/@khriztianmoreno/speaker-kit) + Tailwind (solo en `slides/`). La tienda no carga nada de esto.
 
 ## Mapa de tags
 

@@ -30,6 +30,7 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 - [ ] Ensayar los 5 prompts del panel en **modo simulado** y con **Gemini**.
 - [ ] Clonar el repo en una segunda carpeta en `acto-1` para la demo en vivo.
 - [ ] Hotspot móvil cargado como plan B de red.
+- [ ] Completar repo, proxy y Wi-Fi en `slides/src/talk.ts` y ensayar las slides con la vista del orador (ver "Slides de apertura").
 
 ### 30 minutos antes
 
@@ -37,6 +38,31 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 - [ ] Dos ventanas: la tienda (izquierda) y el editor (derecha). DevTools cerradas hasta el Acto 1.
 - [ ] Escribir en la pizarra o en una diapositiva: URL del repo, URL del proxy, Wi-Fi.
 - [ ] `npm run dev` corriendo en `acto-1`; insignia del panel visible.
+- [ ] Slides abiertas desde la carpeta en `main` (`npm run slides`): presentación en el proyector y vista del orador en tu pantalla.
+
+## Slides de apertura
+
+Abren el Acto 1 (≈15 min) y cubren el ticket, el modelo mental (agente, MCP, WebMCP y su API), la arquitectura del repo, la misión, las reglas y la verificación del entorno. Cada slide tiene notas con guion, tiempo y reloj acumulado.
+
+**Dónde viven:** `slides/` en la rama `main`. Los tags `acto-1`…`final` no las incluyen, así que preséntalas desde la carpeta en `main` (por ejemplo, la misma donde preparas la demo final).
+
+```bash
+npm run slides                       # abre http://localhost:5173/slides/
+# o, con npm run dev corriendo:
+#   http://localhost:5173/slides/              → proyector
+#   http://localhost:5173/slides/speaker.html  → vista del orador
+```
+
+| Tecla | Acción |
+| --- | --- |
+| → / ↓ / espacio | Siguiente slide |
+| ← / ↑ | Slide anterior |
+| S (en la presentación) | Abre la vista del orador en una ventana emergente |
+
+- Navega desde la **vista del orador**: la presentación la sigue (mismo navegador, `BroadcastChannel`, sin internet). Si recargas la presentación con la vista del orador abierta, retoma la slide actual.
+- La vista del orador muestra la slide actual, la siguiente, las notas (`slides/notes/<id>.md`), un cronómetro y la hora.
+- **Ruta corta (≈12 min):** salta `mcp`, `lado-agente`, `estado` y `vs-mcp`. El Acto 2 y el Acto 4 introducen las anotaciones y el Acto 5 retoma la comparación con MCP de servidor.
+- Al terminar (`vamos`), pasa a la tienda en `acto-1` y sigue el guion del Acto 1 desde el minuto 2: el ticket y el modelo mental ya se cubrieron en las slides.
 
 ## Desplegar el proxy del instructor
 
@@ -53,7 +79,7 @@ Los asistentes ponen en su `.env`: `AGENT_BASE_URL=https://tu-proxy.example`. Vi
 
 ### Acto 1 · El incidente (0:00–0:15)
 
-**En el proyector:** la tienda en `acto-1`.
+**En el proyector:** primero las [slides de apertura](#slides-de-apertura); luego la tienda en `acto-1`.
 
 | Min | Qué hacer | Qué decir (ideas clave) |
 | --- | --- | --- |

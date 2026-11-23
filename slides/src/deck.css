@@ -1,0 +1,128 @@
+/*
+ * Opening deck styles. Ported from the "WebMCP: tu UI como tools" talk
+ * (app/globals.css + tailwind.config.ts), moved to Tailwind v4 tokens.
+ *
+ * Scoped on purpose: `source(none)` + `@source` limit class scanning to the
+ * deck sources, and this file is only imported by the slides entries, so the
+ * Rodada store (src/styles.css) never sees Tailwind or its preflight.
+ */
+@import 'tailwindcss' source(none);
+@source './';
+
+@theme {
+  /* GDE system: Google dark ink + the four Google colors. */
+  --color-gde-ink: #202124;
+  /* Code card and dark backgrounds. */
+  --color-gde-night: #17181b;
+  /* Body text on light surfaces: >= 7:1 on white and on every pastel. */
+  --color-gde-soft: #3c4043;
+  /* Body text on dark surfaces: >= 7:1 on #202124. */
+  --color-gde-mist: #dadce0;
+  --color-gde-paper: #f8f9fa;
+  --color-gde-blue: #4285f4;
+  --color-gde-red: #ea4335;
+  --color-gde-yellow: #fbbc04;
+  --color-gde-green: #34a853;
+  /* Tints for text and accents on dark surfaces (>= 4.5:1 on #202124). */
+  --color-gde-blue-light: #8ab4f8;
+  --color-gde-red-light: #f28b82;
+  --color-gde-yellow-light: #fdd663;
+  --color-gde-green-light: #81c995;
+  /* Pastel fills for boxes on light surfaces. */
+  --color-gde-pastel-blue: #d2e3fc;
+  --color-gde-pastel-red: #fad2cf;
+  --color-gde-pastel-yellow: #feefc3;
+  --color-gde-pastel-green: #ceead6;
+  /* Code tokens on #17181b: every token >= 7:1. */
+  --color-gde-code-text: #f1f3f4;
+  --color-gde-code-muted: #bdc1c6;
+
+  /* Self-hosted via @fontsource-variable (OFL-1.1), imported by the entries,
+     so the deck renders with Wi-Fi off. No CDN, no Google Fonts link. */
+  --font-gde: 'Google Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-gde-code: 'Google Sans Code Variable', ui-monospace, Menlo, monospace;
+}
+
+@layer base {
+  html,
+  body {
+    background-color: #202124;
+    color: #f8f9fa;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* ─── Slide deck ─────────────────────────────────────────────────────────── */
+
+/* speaker-kit chrome: dark letterbox, Google blue progress bar. */
+.sk-audience,
+.sk-slide-preview {
+  --sk-bg: #202124;
+}
+/* Scoped under .sk-audience to win over speaker-kit's stylesheet. */
+.sk-audience .sk-audience__progress {
+  background: #3c4043;
+}
+.sk-audience .sk-audience__progress-bar {
+  background: #4285f4;
+}
+
+/* Every slide fills the viewport; inside the speaker preview stage
+   (fixed 1440x900, scaled) it fills the stage instead. The 1920x1080
+   canvas inside is scaled to fit by Frame (primitives.tsx). */
+.deck-frame {
+  height: 100vh;
+  /* Dynamic viewport: excludes browser toolbars so the canvas bottom is never cropped. */
+  height: 100dvh;
+}
+.sk-slide-preview__stage .deck-frame {
+  height: 900px;
+}
+
+/*
+ * Canvas backgrounds, painted with CSS only (no image request, works offline).
+ * One class per background type; see BACKGROUNDS in primitives.tsx.
+ */
+
+/* Hero: paper with the four Google colors as soft gradient glows. */
+.deck-bg-hero {
+  background-color: #f8f9fa;
+  background-image:
+    radial-gradient(circle 620px at 6% 8%, rgba(66, 133, 244, 0.42), transparent 70%),
+    radial-gradient(circle 520px at 96% 14%, rgba(251, 188, 4, 0.38), transparent 70%),
+    radial-gradient(circle 640px at 92% 100%, rgba(52, 168, 83, 0.36), transparent 70%),
+    radial-gradient(circle 480px at 2% 100%, rgba(234, 67, 53, 0.3), transparent 70%);
+}
+
+/* Statement: Google dark with a single blue glow. */
+.deck-bg-statement {
+  background-color: #202124;
+  background-image:
+    radial-gradient(ellipse 900px 700px at 100% 0%, rgba(66, 133, 244, 0.28), transparent 70%),
+    radial-gradient(ellipse 700px 500px at 0% 100%, rgba(234, 67, 53, 0.16), transparent 70%);
+}
+
+/* Content: paper with a faint dot grid. */
+.deck-bg-content {
+  background-color: #f8f9fa;
+  background-image: radial-gradient(circle, rgba(32, 33, 36, 0.12) 2px, transparent 2.5px);
+  background-size: 40px 40px;
+}
+
+/* Code: near-black, flat, so the code card carries the slide. */
+.deck-bg-code {
+  background-color: #202124;
+  background-image: radial-gradient(ellipse 1000px 600px at 100% 100%, rgba(52, 168, 83, 0.14), transparent 70%);
+}
+
+/* Demo: deep blue gradient, unmistakably "we are leaving the slides". */
+.deck-bg-demo {
+  background-color: #0b2a5b;
+  background-image:
+    linear-gradient(135deg, #0b2a5b 0%, #174ea6 55%, #1a73e8 100%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.08) 2px, transparent 2.5px);
+  background-size:
+    100% 100%,
+    40px 40px;
+}
