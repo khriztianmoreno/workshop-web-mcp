@@ -12,12 +12,12 @@ export const TALK = {
   handle: '@khriztianmoreno',
   site: 'khriztianmoreno.dev',
   /** Public clone URL of this repository. */
-  repoUrl: '[URL del repositorio]',
+  repoUrl: 'github.com/khriztianmoreno/workshop-web-mcp',
   /** Instructor proxy for attendees without a Gemini key (AGENT_BASE_URL). */
   proxyUrl: '[URL del proxy]',
   wifi: '[red · clave]',
   /** Published live guide (npm run build:guide → GitHub Pages). Locally: http://localhost:5173/guide/ */
-  guideUrl: '[URL de la guía]',
+  guideUrl: 'khriztianmoreno.github.io/workshop-web-mcp',
 } as const;
 
 /** Sync channel shared by the audience and speaker views. Must match on both. */
