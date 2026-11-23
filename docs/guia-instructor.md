@@ -110,6 +110,42 @@ PORT=8787 npm run server
 
 En un PaaS, define `GEMINI_API_KEY` y `WORKSHOP_TOKEN` en el **almacén de secretos** del servicio, no en el repositorio ni en la línea de comandos compartida.
 
+Si tu plataforma construye imágenes Docker, usa el `Dockerfile` de la raíz: empaqueta solo el proxy (`server/` y `shared/`), corre como usuario sin privilegios, escucha en el puerto `8787` y no necesita archivo `.env` (toda la configuración llega por variables de entorno).
+
+#### Desplegar en Coolify
+
+1. **Nuevo recurso:** *Projects → + New → Public Repository*, pega la URL del repositorio en GitHub y elige la rama `main`.
+2. **Build pack:** `Dockerfile` (ubicación `/Dockerfile`). En *Network*, **Ports Exposes** = `8787`.
+3. **Dominio:** asigna uno con `https://` (por ejemplo `https://proxy.tu-dominio.com`). Coolify, a través de Traefik, emite el certificado y termina HTTPS.
+4. **Variables de entorno** (*Environment Variables*). Marca como secretas las dos primeras:
+
+   | Variable | Valor |
+   | --- | --- |
+   | `GEMINI_API_KEY` (secreta) | La clave **dedicada** al taller, con tope de gasto (ver [1. La clave](#1-la-clave)). |
+   | `WORKSHOP_TOKEN` (secreta) | `openssl rand -hex 16` (32 caracteres). |
+   | `ALLOWED_ORIGINS` | Orígenes exactos: `http://localhost:5173,http://127.0.0.1:5173`. **Nunca** `*`. |
+   | `TRUST_PROXY` | `1` detrás del Traefik de Coolify. `2` si además el dominio pasa por el proxy de Cloudflare (nube naranja). |
+   | `GEMINI_MODEL` | Opcional; vacío = el modelo por defecto. |
+
+   Para los límites, deja los valores por defecto del modo con token (ver la tabla siguiente y los valores recomendados para la sala). No definas `PORT`: la imagen ya usa `8787`.
+5. **Una sola instancia**, sin réplicas: el límite de frecuencia vive en memoria, así que con varias réplicas cada una contaría por su lado.
+6. **Deploy.** La imagen trae un `HEALTHCHECK` contra `/api/health`, que responde `200` aunque haya token; el contenedor debe aparecer como *healthy*.
+
+**Verificación** (los comandos completos están en [4. Probar con curl](#4-probar-con-curl)):
+
+- [ ] `curl https://<dominio>/api/health` → `200` con `"mode":"gemini"`. Si dice `"mock"`, falta `GEMINI_API_KEY`.
+- [ ] `/api/chat` sin token → `401`.
+- [ ] `/t/<WORKSHOP_TOKEN>/api/chat` → `200`.
+- [ ] Una llamada normal y otra con `-H 'x-forwarded-for: 6.6.6.6'`. En Coolify, abre el recurso → *Logs* y busca las líneas `[proxy] new client key: ...`: las dos deben mostrar **tu IP pública**. Si aparece una IP interna (`10.x`, `172.x`), sube `TRUST_PROXY`; si aparece `6.6.6.6`, bájalo. Cambiar una variable exige redesplegar.
+
+**Qué ponen los asistentes** en su `.env` (detalle en [3. Qué ponen los asistentes](#3-qué-ponen-los-asistentes)):
+
+```bash
+AGENT_BASE_URL=https://<dominio>/t/<WORKSHOP_TOKEN>
+```
+
+Comparte el token por el chat del taller, nunca en pantalla. Al terminar el evento, rota `WORKSHOP_TOKEN` (o detén el recurso) y revoca la clave.
+
 | Variable | Qué hace | Valor por defecto |
 | --- | --- | --- |
 | `WORKSHOP_TOKEN` | Token compartido de la sala, de **24 caracteres o más** (el servidor no arranca con uno más corto). Sin él, el proxy queda abierto (solo para desarrollo local). | vacío (sin token) |

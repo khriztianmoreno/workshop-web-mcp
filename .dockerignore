@@ -1,0 +1,44 @@
+# The image only needs package.json, package-lock.json, server/ and shared/.
+# Secrets: never send env files to the build context.
+.env
+.env.*
+!env.example
+
+# Dependencies and build outputs
+node_modules
+dist
+dist-guide
+*.tsbuildinfo
+
+# Repository and local tooling
+.git
+.github
+.atl
+.codegraph
+.vscode
+.idea
+.DS_Store
+PENDIENTES.md
+Dockerfile
+.dockerignore
+
+# Not used by the proxy
+src
+slides
+guide
+docs
+public
+scripts
+index.html
+*.md
+vite*.config.ts
+vitest.config.ts
+tsconfig*.json
+
+# Tests and scratch outputs
+**/*.test.ts
+**/*.spec.ts
+coverage
+*.log
+tmp
+scratch

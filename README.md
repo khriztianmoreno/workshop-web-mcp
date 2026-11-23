@@ -173,6 +173,7 @@ Para que los asistentes sin clave usen Gemini, el instructor publica el proxy de
 - `ALLOWED_ORIGINS`: por defecto `http://localhost:5173,http://127.0.0.1:5173`, que es donde los asistentes abren la app. CORS no frena a `curl`: la protección real es el token, los límites y el tope de gasto.
 - `TRUST_PROXY=<N>` solo si hay N proxies inversos delante (balanceador, PaaS); debe ser el número exacto de saltos. Sin él se usa la IP del socket.
 - Límites: con `WORKSHOP_TOKEN`, `RATE_LIMIT_PER_MINUTE` (por IP) es `600` y `RATE_LIMIT_GLOBAL_PER_MINUTE` `1500`, porque toda la sala puede salir por una sola IP (en local: `60` y `600`). `MAX_BODY_BYTES` (`262144`), `MAX_OUTPUT_TOKENS` (`8192`) y los topes de `env.example`.
+- **Docker / Coolify:** el `Dockerfile` de la raíz empaqueta solo el proxy (puerto `8787`, usuario sin privilegios, `HEALTHCHECK` en `/api/health`). Pasos para Coolify, variables y verificación en [Desplegar en Coolify](docs/guia-instructor.md#desplegar-en-coolify).
 
 Los asistentes ponen el token en la ruta, así los tags `acto-1`…`acto-4` funcionan sin tocar código:
 
