@@ -1,16 +1,48 @@
-# Rodada · Taller WebMCP
+# Misión: El Checkout Roto · Taller WebMCP
 
 > **DevFest Bogotá · 28 de noviembre de 2026 · 90 minutos**
 > Dale ojos y manos a un agente de IA dentro de tu propia página web, sin servidor MCP, con `document.modelContext`.
 
-Rodada es una tienda ficticia de equipo para motociclistas (cascos, chaquetas, guantes, botas y accesorios). Tiene un asistente de compras en un panel lateral que, al comenzar el taller, **no puede ver ni tocar la página**: es honesto pero inútil y manda al cliente a buscar por su cuenta. Durante cinco actos lo convertirás en un agente útil y seguro usando **WebMCP**.
+**Guía en vivo:** [khriztianmoreno.github.io/workshop-web-mcp](https://khriztianmoreno.github.io/workshop-web-mcp/)
 
-```text
- Acto 1  El incidente        15 min   El asistente responde "hazlo tú". Registras tu primera herramienta.
- Acto 2  Darle ojos          25 min   Herramientas de lectura (readOnlyHint).
- Acto 3  Darle manos         30 min   Herramientas de escritura que reutilizan las acciones de la UI.
- Acto 4  El sabotaje         15 min   Inyección de prompts en una reseña y defensa en profundidad.
- Acto 5  Cierre               5 min   WebMCP vs. MCP de servidor, producción y próximos pasos.
+![Tienda Rodada con el panel del asistente: tarjetas de herramientas completadas (add_to_cart, apply_coupon, open_cart) y una respuesta en markdown con el resumen del carrito](docs/images/tienda-asistente.webp)
+
+## El problema
+
+Muchas empresas ya tienen un chatbot en su sitio. El cliente le pide "agrega un casco y unos guantes talla M y aplica el cupón", y el chatbot responde con texto: **"hazlo tú"**. No ve el catálogo, no sabe qué tallas quedan y no puede tocar la página. Para que actúe, hoy hay que cablear a mano cada acción contra una API aparte.
+
+**WebMCP** propone otra cosa: la página **declara sus acciones una sola vez** como herramientas (`document.modelContext.registerTool`) y cualquier agente, el del navegador o uno dentro de la página, puede leerlas y ejecutarlas reutilizando la misma lógica que usan los botones.
+
+En este taller lo haces sobre **Rodada**, una tienda ficticia de equipo para motociclistas. Empiezas con un asistente honesto pero inútil y terminas con un agente que busca, agrega al carrito, aplica cupones y resiste una inyección de prompts.
+
+## Los 5 actos
+
+| Acto | Tiempo | Qué construyes | Tag de inicio |
+| --- | --- | --- | --- |
+| 1 · El incidente | 15 min | Hook de registro y tu primera herramienta, `get_store_info` | `acto-1` |
+| 2 · Darle ojos | 25 min | 5 herramientas de lectura (`readOnlyHint`) | `acto-2` |
+| 3 · Darle manos | 30 min | 5 herramientas de escritura que reutilizan las acciones de la UI + el "prompt jefe" | `acto-3` |
+| 4 · El sabotaje | 15 min | 3 defensas contra una inyección de prompts escondida en una reseña | `acto-4` |
+| 5 · Cierre | 5 min | WebMCP vs. MCP de servidor, producción y próximos pasos | `final` |
+
+Cada tag es el **punto de partida** de un acto y, a la vez, la **solución** del anterior. Trabaja siempre en tu propia rama:
+
+```bash
+git switch -c mi-acto-1 acto-1
+```
+
+**¿Te quedaste atrás?** Guarda tu avance y salta al tag siguiente; cada guía tiene esta caja con el comando exacto:
+
+```bash
+git stash -u                       # o: git add -A && git commit -m "wip"
+git switch -c mi-acto-3 acto-3
+```
+
+La guía de cada acto termina con un bloque plegado **"Solución completa del Acto N"** para comparar tu código. Para probar tu solución con las pruebas reales del acto, tráelas del tag siguiente:
+
+```bash
+git checkout acto-3 -- src/webmcp/tools/acto-2.test.ts
+npm test
 ```
 
 ## Requisitos
@@ -18,184 +50,172 @@ Rodada es una tienda ficticia de equipo para motociclistas (cascos, chaquetas, g
 | Necesitas | Versión | Cómo verificar |
 | --- | --- | --- |
 | Node.js | **22.12 o superior** (22 LTS o 24 LTS) | `node -v` |
-| npm | el que viene con Node | `npm -v` |
 | Git | cualquiera reciente | `git --version` |
-| Chrome | actualizado (WebMCP nativo: 149+) | `chrome://version` |
-| Clave de Gemini | **opcional** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| Google Chrome | actualizado | `chrome://version` |
 
-Sin clave de Gemini todo funciona en **"Modo simulado"**: un agente determinista que reconoce los prompts del taller. Sin la flag de Chrome todo funciona con el **polyfill** incluido.
+**WebMCP nativo (opcional):** activa `chrome://flags/#enable-webmcp-testing` y reinicia Chrome. La píldora de la cabecera pasa de "WebMCP polyfill" a "WebMCP nativo".
+
+Sin la flag no pasa nada: la app instala un **polyfill** con la misma forma de la especificación y todo el taller funciona igual. Para comparar ambos caminos con la flag activa, abre `http://localhost:5173/?webmcp=polyfill` (la píldora dice "WebMCP polyfill (forzado)").
 
 ## Inicio rápido
 
 ```bash
-git clone <URL-del-repositorio> workshop-web-mcp
+git clone https://github.com/khriztianmoreno/workshop-web-mcp.git
 cd workshop-web-mcp
-git switch -c mi-taller acto-1   # empieza desde el Acto 1
+git switch -c mi-acto-1 acto-1
 npm ci
-cp env.example .env              # opcional: agrega GEMINI_API_KEY
-npm run check                    # verifica tu entorno
-npm run dev                      # abre http://localhost:5173
+cp env.example .env
 ```
 
-`npm run dev` levanta dos procesos: **web** (Vite, puerto 5173) y **proxy** (Hono, puerto 8787).
+Elige cómo responde el asistente editando `.env`:
+
+| Opción | Qué poner en `.env` | Resultado |
+| --- | --- | --- |
+| **A. Tu clave de Gemini** | `GEMINI_API_KEY=` con una clave gratuita de [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | Un modelo real, vía tu proxy local |
+| **B. Proxy del instructor** | `AGENT_BASE_URL=https://workshop-webmcp.khriztianmoreno.cloud/t/<token>` | Un modelo real, sin clave propia. El `<token>` se comparte en privado durante el taller |
+| **C. Nada** | Deja todo vacío | **"Modo simulado"**: agente determinista, sin internet. Solo reconoce los prompts de los botones de sugerencias |
+
+```bash
+npm run check   # verifica Node, dependencias, .env, modo del asistente y proxy
+npm run dev     # tienda en http://localhost:5173 + proxy en :8787
+```
+
+`npm run dev` levanta dos procesos: **web** (Vite, puerto 5173) y **proxy** (Hono, puerto 8787). Vite reenvía `/api` al proxy, así la clave nunca llega al navegador. Si cambias `.env`, reinicia `npm run dev`.
+
+## La guía en vivo
+
+Un acto por página con tiempo, objetivo, pasos con casilla, bloques de código con botón de copiar, explicaciones **"Cómo funciona"** y la caja "¿Te quedaste atrás?". El avance se guarda en tu navegador.
+
+![Guía en vivo del Acto 3: tarea 3.5 checkout con un bloque de código TypeScript y la sección "Cómo funciona" debajo](docs/images/guia-en-vivo.webp)
+
+- Publicada: [khriztianmoreno.github.io/workshop-web-mcp](https://khriztianmoreno.github.io/workshop-web-mcp/) (GitHub Pages, flujo [`deploy-guide.yml`](.github/workflows/deploy-guide.yml)).
+- Local: `npm run guide` o `http://localhost:5173/guide/` con `npm run dev`. Enlace directo a un acto: `#acto-3`.
+- Se genera a partir de [`docs/*.md`](docs/) al compilar: si cambias un doc, cambia la guía.
+
+| Archivo | Para |
+| --- | --- |
+| [docs/00-prework.md](docs/00-prework.md) | Preparación previa (enviar una semana antes) |
+| [docs/01-acto-1-incidente.md](docs/01-acto-1-incidente.md) … [docs/05-acto-5-cierre.md](docs/05-acto-5-cierre.md) | Un archivo por acto |
+| [docs/cheatsheet.md](docs/cheatsheet.md) | Referencia de la API en una página |
+| [docs/guia-instructor.md](docs/guia-instructor.md) | Guion minuto a minuto, plan B y despliegue del proxy |
 
 ## Scripts
 
 | Comando | Qué hace |
 | --- | --- |
-| `npm run dev` | App + proxy con recarga en caliente |
-| `npm run slides` | Abre las slides de apertura (solo Vite, sin proxy) |
-| `npm run speaker` | Slides en el puerto 5180, para presentar mientras el taller corre en otro clon con `npm run dev` |
-| `npm run guide` | Abre la guía en vivo del taller (solo Vite, sin proxy) |
-| `npm run build:guide` | Build estático solo de la guía en `dist-guide/` (para publicarla) |
-| `npm run server:mock` | Solo el proxy, forzando el modo simulado |
+| `npm run dev` | Tienda (Vite, 5173) + proxy (8787) con recarga en caliente |
+| `npm run check` | Verificación del entorno (Node, dependencias, `.env`, proxy). No modifica nada |
+| `npm run slides` | Abre las slides de apertura en `/slides/` (solo Vite, sin proxy) |
+| `npm run speaker` | Slides en el puerto **5180** (`--strictPort`), para presentar mientras el taller corre en otro clon |
+| `npm run guide` | Abre la guía en vivo en `/guide/` (solo Vite, sin proxy) |
+| `npm run build:guide` | Build estático solo de la guía en `dist-guide/` (lo que se publica) |
+| `npm run server:mock` | Solo el proxy, forzando el "Modo simulado" |
+| `npm run eval:injection` | Mide, con Gemini real, cuántas veces un modelo cae en la inyección del Acto 4 (ver `scripts/injection-eval.ts`) |
 | `npm test` | Pruebas con Vitest |
 | `npm run typecheck` | TypeScript de la app y del servidor |
 | `npm run build` | Build de producción de la app (incluye `/slides/` y `/guide/`) |
-| `npm run check` | Verificación del entorno (Node, dependencias, `.env`, proxy) |
 
-## Slides de apertura
+## Slides para el instructor
 
-Las slides que proyecta el instructor al inicio (los primeros ≈9 min del Acto 1: el incidente, los conceptos y la dinámica del taller) viven en `slides/`, en la rama `main` (no en los tags de los actos).
+Las slides de apertura (≈9 minutos del Acto 1) viven en `slides/` **solo en la rama `main`**: los tags de los actos no las incluyen. Cuentan primero el problema (el asistente que responde "hazlo tú") y después la API, la arquitectura y la misión.
 
-| URL (con `npm run dev` corriendo) | Qué es |
+| Portada | El problema |
 | --- | --- |
-| [http://localhost:5173/slides/](http://localhost:5173/slides/) | La presentación (proyector) |
-| [http://localhost:5173/slides/speaker.html](http://localhost:5173/slides/speaker.html) | Vista del orador: notas, siguiente slide y cronómetro |
+| ![Portada de las slides: "Misión: El Checkout Roto", WebMCP hands-on, DevFest Bogotá](docs/images/slides-portada.webp) | ![Slide del problema: el cliente pide agregar productos y el asistente responde "hazlo tú"](docs/images/slides-problema.webp) |
 
-- `npm run slides` levanta Vite y abre la presentación (si `npm run dev` ya ocupa el puerto 5173, Vite propone otro).
-- Navegación: flechas o espacio. **S** abre la vista del orador en una ventana aparte; ambas se sincronizan por `BroadcastChannel` (mismo navegador, sin red). En pantallas táctiles aparecen botones y gestos; `?touch` los fuerza.
-- Fuentes: `slides/src/slides.tsx` (contenido), `slides/notes/*.md` (notas del orador) y `slides/src/talk.ts` (datos del evento: completa guía, repo, proxy y Wi-Fi antes de presentar).
-- Motor: [`@khriztianmoreno/speaker-kit`](https://www.npmjs.com/package/@khriztianmoreno/speaker-kit) + Tailwind (solo en `slides/`). La tienda no carga nada de esto.
-
-## Guía en vivo
-
-Una página para tener abierta junto al editor durante el taller: un acto por página con su tiempo, objetivo, pasos, hito y la caja "¿Te quedaste atrás?" con el comando para saltar al tag del acto. Los bloques de código tienen botón de copiar, las soluciones vienen plegadas y cada paso tiene una casilla; el avance se guarda en el navegador (`localStorage`).
-
-| URL | Qué es |
-| --- | --- |
-| [http://localhost:5173/guide/](http://localhost:5173/guide/) | La guía, con `npm run dev` o `npm run guide` |
-| `http://localhost:5173/guide/#acto-3` | Enlace directo a un acto (`#prework`, `#acto-1`…`#acto-5`, `#cheatsheet`) |
-
-- **Sin contenido duplicado:** la guía lee `docs/*.md` al compilar (plugin `guide/build/content.ts`, con marked y shiki) y entrega HTML listo. Si cambias un doc, cambia la guía.
-- **Publicarla:** `npm run build:guide` genera `dist-guide/`, un sitio estático autocontenido. La base es relativa (`./`), así que funciona en cualquier ruta; `GUIDE_BASE=/ruta/ npm run build:guide` la fija si hace falta. El flujo `.github/workflows/deploy-guide.yml` la publica en GitHub Pages; los pasos están en [docs/guia-instructor.md](docs/guia-instructor.md#publicar-la-guía-en-vivo).
-- Como se compila desde `main`, la guía se puede publicar o actualizar después de crear los tags de los actos, sin moverlos.
-
-## Mapa de tags
-
-Cada tag es el **punto de partida** de un acto y, a la vez, la **solución** del acto anterior.
-
-| Tag | Empiezas el… | Contiene |
-| --- | --- | --- |
-| `acto-1` | Acto 1 | App funcionando, panel de chat con **cero** herramientas. TODOs para todo. |
-| `acto-2` | Acto 2 | Hook de registro + `get_store_info` (solución del Acto 1). |
-| `acto-3` | Acto 3 | Herramientas de lectura (solución del Acto 2). |
-| `acto-4` | Acto 4 | Herramientas de escritura + `checkout` ingenuo (solución del Acto 3). |
-| `final` | Acto 5 | Defensas del Acto 4 y solución completa. |
-
-¿Te quedaste atrás? Guarda tu trabajo y salta al siguiente tag:
+Para presentar mientras la tienda corre:
 
 ```bash
-git add -A && git commit -m "wip: mi avance"   # o: git stash -u
-git switch -c mi-acto-3 acto-3
+# Clon 1, en acto-1: la tienda del taller
+npm run dev                # http://localhost:5173
+
+# Clon 2, en main: las slides
+npm run speaker            # http://localhost:5180/slides/ (proyector)
+                           # http://localhost:5180/slides/speaker.html (vista del orador)
 ```
 
-¿Quieres probar tu solución con las pruebas reales del acto? Tráelas del tag siguiente:
-
-```bash
-git checkout acto-3 -- src/webmcp/tools/acto-2.test.ts
-npm test
-```
-
-## Guías
-
-| Archivo | Para |
-| --- | --- |
-| [docs/00-prework.md](docs/00-prework.md) | Preparación (enviar una semana antes) |
-| [docs/01-acto-1-incidente.md](docs/01-acto-1-incidente.md) | Acto 1 |
-| [docs/02-acto-2-ojos.md](docs/02-acto-2-ojos.md) | Acto 2 |
-| [docs/03-acto-3-manos.md](docs/03-acto-3-manos.md) | Acto 3 |
-| [docs/04-acto-4-sabotaje.md](docs/04-acto-4-sabotaje.md) | Acto 4 |
-| [docs/05-acto-5-cierre.md](docs/05-acto-5-cierre.md) | Acto 5 |
-| [docs/cheatsheet.md](docs/cheatsheet.md) | Referencia de la API en una página |
-| [docs/guia-instructor.md](docs/guia-instructor.md) | Guion minuto a minuto para quien dicta el taller |
+La tecla **S** abre la vista del orador (notas, siguiente slide, cronómetro); ambas ventanas se sincronizan por `BroadcastChannel`. Los datos del evento (guía, repo, proxy con `<token>`, Wi-Fi) están en `slides/src/talk.ts`. Detalle en [docs/guia-instructor.md](docs/guia-instructor.md#slides-de-apertura).
 
 ## Arquitectura
 
-```text
-┌────────────────────────── Navegador (localhost:5173) ───────────────────────────┐
-│                                                                                 │
-│  Tienda React ──acciones──▶ store (src/store)  ◀──mismas acciones── Herramientas │
-│      ▲                                                       src/webmcp/tools   │
-│      │ glow "Ejecutado por agente"                                   │          │
-│  AgentActivity ◀── toolactivated ── document.modelContext ◀─registerTool         │
-│                                         ▲      │                                │
-│                         getTools/executeTool   │                                │
-│                                         │      ▼                                │
-│                              Panel de chat (src/agent): ciclo del agente        │
-└──────────────────────────────────────────┬──────────────────────────────────────┘
-                                           │ POST /api/chat {messages, tools}
-                                ┌──────────▼──────────┐
-                                │ Proxy (server/)     │── Gemini (@google/genai)
-                                │ o "Modo simulado"   │   la clave nunca sale de aquí
-                                └─────────────────────┘
+```mermaid
+flowchart LR
+    subgraph Navegador["Navegador · localhost:5173"]
+        UI["Tienda React<br/>(botones)"] -->|acciones| Store["src/store<br/>estado + acciones"]
+        Tools["src/webmcp/tools<br/>herramientas"] -->|mismas acciones| Store
+        Tools -->|registerTool| MC["document.modelContext<br/>(nativo o polyfill)"]
+        Chat["src/agent<br/>panel de chat + ciclo del agente"] -->|getTools / executeTool| MC
+    end
+    Chat -->|"POST /api/chat"| Proxy["server/<br/>Hono + @google/genai"]
+    Proxy --> Gemini["Gemini"]
+    Proxy -.->|sin clave| Mock["Modo simulado"]
 ```
 
-- **`src/webmcp/`**: polyfill con la forma de la especificación, hook de registro, herramientas y retroalimentación visual.
-- **`src/agent/`**: el ciclo del agente corre **en el navegador**: `getTools()` → modelo → `executeTool()` → resultados → repetir (máximo 8 pasos).
-- **`server/`**: proxy mínimo. Llama a Gemini una vez por solicitud. Nunca expone la clave. Modelo y *system prompt* fijos en el servidor; token de sala y límites de tamaño y frecuencia para hostearlo.
-- **`src/store/`**: estado y acciones compartidas. Las herramientas **reutilizan** las mismas acciones que los botones.
+- **`src/store/`**: estado y acciones de la tienda. Las herramientas **reutilizan** las mismas acciones que los botones: una sola fuente de verdad.
+- **`src/webmcp/`**: polyfill con la forma de la especificación y adaptador del modo nativo (`polyfill.ts`), hook de registro (`useWebMcpTools.ts`), herramientas y retroalimentación visual ("Ejecutado por agente").
+- **`src/agent/`**: el ciclo del agente corre **en el navegador**: `getTools()` → modelo → `executeTool()` → resultados → repetir. Las respuestas se muestran como markdown sanitizado.
+- **`server/`**: proxy mínimo con Hono y `@google/genai`. Hace una llamada a Gemini por solicitud; modelo y *system prompt* fijos en el servidor. **La clave nunca llega al navegador.**
+- **`shared/`**: protocolo entre el panel y el proxy, y los prompts exactos del taller (`demo-prompts.ts`).
 
-### Sobre la especificación
+## Seguridad
 
-El código sigue el borrador del W3C WebML Community Group del 13 de noviembre de 2026:
+**Proxy** (en `main`; los tags de los actos no cambian):
 
-- La API vive en `document.modelContext` (solo en contextos seguros: `https://` o `localhost`). `navigator.modelContext` está obsoleto desde Chrome 150; detectamos ambos.
-- `registerTool(tool, { signal, exposedTo })`. **No existe** `unregisterTool`: se desregistra abortando el `AbortSignal`.
-- `getTools()` y `executeTool()` permiten que un agente dentro de la página liste y ejecute herramientas.
-- `provideContext`, `clearContext` y los recursos **fueron eliminados**: solo hay herramientas.
+- `WORKSHOP_TOKEN` (mínimo 24 caracteres): sin token válido, `/api/chat` responde 401. Demasiados tokens inválidos distintos desde una IP dan 429.
+- Límites de frecuencia por IP y globales, y topes de tamaño de cuerpo, mensajes, herramientas y tokens de salida (ver `env.example`).
+- CORS con lista explícita de orígenes (`ALLOWED_ORIGINS`, por defecto `localhost:5173`). CORS no frena a `curl`: la protección real es el token, los límites y el tope de gasto de la clave.
+- El asistente está acotado a la tienda: el *system prompt* le impide responder temas ajenos a Rodada.
 
-## Modos del agente
+**Acto 4 · defensa en profundidad** contra la reseña maliciosa:
 
-| Modo | Cuándo | Insignia en el panel |
-| --- | --- | --- |
-| Gemini | `GEMINI_API_KEY` definida en `.env` | `Gemini · gemini-3.8-flash` |
-| Simulado | Sin clave, `AGENT_MODE=mock` o `npm run server:mock` | `Modo simulado` |
-| Proxy del instructor | `AGENT_BASE_URL=https://…/t/<token>` en `.env` | Lo que reporte ese proxy |
+1. `untrustedContentHint` en `get_product_reviews`: el agente trata la salida como **datos no confiables**, nunca como instrucciones.
+2. Límite de cantidad en `add_to_cart`: la página rechaza más de 3 unidades por producto, aunque el modelo obedezca.
+3. `consequentialHint` en `checkout` + **confirmación propia de la página**: aunque el agente no pregunte, la tienda sí.
 
-El modelo por defecto es `gemini-3.8-flash` (cámbialo con `GEMINI_MODEL`).
+![Diálogo de la tienda "Un agente quiere finalizar tu compra" con el total, los productos y los botones Cancelar y "Sí, finalizar compra"](docs/images/confirmacion-checkout.webp)
 
-## Hostear el proxy para la sala
+**Chat:** las respuestas del modelo se renderizan como markdown sin HTML crudo ni imágenes, y con URLs filtradas.
 
-Para que los asistentes sin clave usen Gemini, el instructor publica el proxy de `main` en internet. Resumen (detalle completo en [`docs/guia-instructor.md`](docs/guia-instructor.md#hostear-el-proxy-para-la-sala)):
+## Hostear el proxy
 
-- **Clave dedicada** al taller, con **tope de gasto o cuota** en su proyecto. **Revócala** al terminar el evento.
-- `WORKSHOP_TOKEN=<token>` (mínimo 24 caracteres; genera uno con `openssl rand -hex 16`): sin token válido, `/api/chat` responde 401, y tras 30 tokens inválidos distintos por minuto desde una IP, 429 (repetir el mismo token equivocado cuenta una sola vez). Sin la variable, el proxy queda abierto (desarrollo local y modo simulado). El token viaja en la URL: no lo proyectes y rótalo después del evento.
-- `ALLOWED_ORIGINS`: por defecto `http://localhost:5173,http://127.0.0.1:5173`, que es donde los asistentes abren la app. CORS no frena a `curl`: la protección real es el token, los límites y el tope de gasto.
-- `TRUST_PROXY=<N>` solo si hay N proxies inversos delante (balanceador, PaaS); debe ser el número exacto de saltos. Sin él se usa la IP del socket.
-- Límites: con `WORKSHOP_TOKEN`, `RATE_LIMIT_PER_MINUTE` (por IP) es `600` y `RATE_LIMIT_GLOBAL_PER_MINUTE` `1500`, porque toda la sala puede salir por una sola IP (en local: `60` y `600`). `MAX_BODY_BYTES` (`262144`), `MAX_OUTPUT_TOKENS` (`8192`) y los topes de `env.example`.
-- **Docker / Coolify:** el `Dockerfile` de la raíz empaqueta solo el proxy (puerto `8787`, usuario sin privilegios, `HEALTHCHECK` en `/api/health`). Pasos para Coolify, variables y verificación en [Desplegar en Coolify](docs/guia-instructor.md#desplegar-en-coolify).
+Para que quienes no tienen clave usen Gemini, el instructor publica el proxy de `main` en internet. El `Dockerfile` de la raíz empaqueta solo el proxy (puerto 8787, usuario sin privilegios, `HEALTHCHECK` en `/api/health`).
 
-Los asistentes ponen el token en la ruta, así los tags `acto-1`…`acto-4` funcionan sin tocar código:
-
-```bash
-AGENT_BASE_URL=https://tu-proxy.example/t/<token>   # Vite reenvía /api (recomendado)
-VITE_AGENT_URL=https://tu-proxy.example/t/<token>   # el navegador llama directo
-```
-
-Prueba rápida: `curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -d '{"messages":[{"role":"user","text":"hola"}],"tools":[]}' https://tu-proxy.example/t/<token>/api/chat` debe dar `200`, y sin `/t/<token>`, `401`. Los errores del modelo llegan al chat como un mensaje genérico con un `id`; el detalle queda en el log del servidor.
+Clave dedicada con tope de gasto, variables, Coolify, `TRUST_PROXY` y pruebas con `curl`: todo está en [docs/guia-instructor.md → Hostear el proxy para la sala](docs/guia-instructor.md#hostear-el-proxy-para-la-sala).
 
 ## Solución de problemas
 
 | Síntoma | Causa probable | Solución |
 | --- | --- | --- |
+| La insignia dice **"Modo simulado"** y esperabas Gemini | No existe `.env`, la variable está vacía o no reiniciaste | `cp env.example .env`, completa `GEMINI_API_KEY` o `AGENT_BASE_URL` y reinicia `npm run dev` |
+| "Modo simulado" no entiende tu pregunta | Solo reconoce los prompts del taller | Usa los botones de sugerencias del panel |
+| Error **401** en el chat | Falta el token del proxy del instructor o está mal escrito | Revisa `AGENT_BASE_URL=…/t/<token>` y reinicia `npm run dev` |
+| `git pull` dice **"divergent branches"** o los tags están viejos | El instructor reescribió `main` o los tags | Ver el bloque de abajo |
+| `Port 5173 is in use` / "Proxy desconectado" | Otra instancia de Vite o del proxy | Cierra la otra; para el proxy usa `PORT=8788` en `.env`. `npm run speaker` usa 5180 y falla si está ocupado |
 | `npm ci` falla con `EBADENGINE` | Node < 22.12 | Instala Node 22 LTS o 24 LTS |
-| Insignia "Proxy desconectado" | El proxy no arrancó o el puerto 8787 está ocupado | Revisa la terminal `[proxy]`; usa `PORT=8788` en `.env` |
-| `document.modelContext` es `undefined` | No es contexto seguro (por ejemplo, IP de red local con http) | Usa `http://localhost:5173` |
+| `document.modelContext` es `undefined` | No es contexto seguro (IP de red con `http`) | Usa `http://localhost:5173` |
 | "A tool named … is already registered" | Registraste sin `signal` o sin abortar en la limpieza | Revisa `useWebMcpTools` (Acto 1) |
-| El panel dice "0 herramientas" | No agregaste la herramienta a `storeTools` | `src/webmcp/tools/index.ts` |
-| Error 502 en el chat | Gemini no responde (red, cuota o clave) | `AGENT_MODE=mock` o el proxy del instructor |
-| El agente "real" no hace lo que esperabas | Los modelos no son deterministas | Usa los prompts exactos o el modo simulado |
+
+Si el instructor actualizó el repositorio con *force-push*, sincroniza sin perder tu trabajo (tu avance vive en tus ramas `mi-acto-N`, no en `main`):
+
+```bash
+git fetch origin --tags --force     # trae los tags actualizados
+git switch main
+git reset --hard origin/main        # solo si nunca trabajaste en main
+git switch -c mi-acto-3-v2 acto-3   # recrea tu rama desde el tag nuevo
+```
+
+Más casos en la [tabla de diagnóstico de la guía del instructor](docs/guia-instructor.md#tabla-de-diagnóstico).
+
+## Estado de la especificación
+
+WebMCP es un **borrador** del [W3C Web Machine Learning Community Group](https://webmachinelearning.github.io/webmcp/), no un estándar. El código sigue el borrador del 13 de noviembre de 2026:
+
+- La API vive en `document.modelContext` (solo en contextos seguros). `navigator.modelContext` está **obsoleto desde Chrome 150**; el código detecta ambos.
+- `registerTool(tool, { signal, exposedTo })`. **No existe** `unregisterTool`: se desregistra abortando el `AbortSignal`.
+- `getTools()` y `executeTool()` permiten que un agente dentro de la página liste y ejecute herramientas.
+- En producción: **origin trial** en Chrome 149–156 (ver [docs/05-acto-5-cierre.md](docs/05-acto-5-cierre.md)).
+
+Créditos: especificación y explicador en [github.com/webmachinelearning/webmcp](https://github.com/webmachinelearning/webmcp).
 
 ## Licencia y créditos
 
