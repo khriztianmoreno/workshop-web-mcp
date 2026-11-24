@@ -38,22 +38,23 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 
 - [ ] Proyector: zoom del navegador al 125 %, editor con fuente 18+, terminal con fuente grande.
 - [ ] Dos ventanas: la tienda (izquierda) y el editor (derecha). DevTools cerradas hasta el Acto 1.
-- [ ] Escribir en la pizarra o en una diapositiva: URL de la guía, URL del repo, URL del proxy **sin el token**, Wi-Fi (la slide de verificación ya las proyecta desde `talk.ts`). El token se comparte por el chat del taller, nunca en el proyector.
+- [ ] Escribir en la pizarra o en una diapositiva: URL de la guía, URL del repo, URL del proxy con el marcador `<token>` en lugar del token real, Wi-Fi (la slide de verificación ya las proyecta desde `talk.ts`, también con `<token>`). El token real se comparte solo por el chat del taller, nunca en el proyector, y se rota al terminar el evento.
 - [ ] `npm run dev` corriendo en `acto-1`; insignia del panel visible.
-- [ ] Slides abiertas desde la carpeta en `main` (`npm run slides`): presentación en el proyector y vista del orador en tu pantalla.
+- [ ] Slides abiertas desde la copia en `main` con `npm run speaker` (puerto 5180), mientras la tienda corre con `npm run dev` desde el otro clon: presentación en el proyector y vista del orador en tu pantalla.
 
 ## Slides de apertura
 
 Son los primeros **≈9 minutos** del Acto 1 (14 slides) y dejan **≈6 minutos de práctica**. Cubren el ticket, el modelo mental (agente, MCP, WebMCP y su API), la arquitectura del repo, la misión, las reglas y la verificación del entorno. Cada slide tiene notas con guion, tiempo y reloj acumulado.
 
-**Dónde viven:** `slides/` en la rama `main`. Los tags `acto-1`…`final` no las incluyen, así que preséntalas desde la carpeta en `main` (por ejemplo, la misma donde preparas la demo final).
+**Dónde viven:** `slides/` en la rama `main`. Los tags `acto-1`…`final` no las incluyen, así que preséntalas desde una copia en `main` (por ejemplo, la misma donde preparas la demo final), mientras el taller corre con `npm run dev` desde otro clon en `acto-1`. Con `npm run speaker` las slides usan el puerto 5180 y no chocan con la tienda en el 5173.
 
 ```bash
-npm run slides                       # abre http://localhost:5173/slides/
-# o, con npm run dev corriendo:
-#   http://localhost:5173/slides/              → proyector
-#   http://localhost:5173/slides/speaker.html  → vista del orador
+npm run speaker                      # desde la copia en main; abre http://localhost:5180/slides/
+#   http://localhost:5180/slides/              → proyector
+#   http://localhost:5180/slides/speaker.html  → vista del orador
 ```
+
+Si solo tienes una copia del repo, `npm run slides` las abre en `http://localhost:5173/slides/` (mismo puerto que la tienda, así que no puedes tener ambas a la vez).
 
 | Tecla | Acción |
 | --- | --- |
@@ -266,7 +267,7 @@ Busca un casco certificado por menos de 1.200.000 COP, agrégalo en talla M junt
 
 | Min | Qué hacer | Qué decir |
 | --- | --- | --- |
-| 0–4 | En `acto-4`, con carrito vacío, botón **"Acto 4 · Reseñas"** | Deja que pase: 10 cascos y pedido confirmado sin preguntar. Silencio dramático. |
+| 0–4 | En `acto-4`, con carrito vacío, botón **"Acto 4 · Reseñas"** | Si el modelo obedece (10 cascos y `checkout` sin preguntar), deja que pase y haz una pausa. Si se resiste (lo más probable), señálalo: "Hoy se resistió, pero la página no puede depender de eso." Opcional: muestra la falla en Modo simulado (ver nota abajo). |
 | 4–5 | Abre el detalle del Altamira GT-R y lee la reseña maliciosa | "El usuario no hizo nada malo. El ataque vino de un tercero." |
 | 5–7 | Diagrama de defensa en profundidad | "Las anotaciones son pistas; la validación de la página es la garantía." |
 | 7–13 | Asistentes implementan las 3 capas | — |
@@ -282,7 +283,7 @@ Busca un casco certificado por menos de 1.200.000 COP, agrégalo en talla M junt
 Finaliza la compra.
 ```
 
-> Con Gemini real el modelo puede resistirse a la inyección desde el principio. Si pasa, **celébralo** y explica que no puedes apostar a eso; cambia a modo simulado (`npm run server:mock`) para mostrar el ataque de forma reproducible.
+> **No prometas que el ataque va a funcionar.** En nuestras mediciones la inyección de la reseña no tuvo éxito con modelos actuales (0 de 60 en 12 modelos con el prompt del sistema completo; 0 de 25 con un prompt ingenuo sin el bloque de seguridad), y en el ensayo Gemini detectó la instrucción y la descartó. La lección del acto es la defensa en profundidad que **no depende del modelo**: `untrustedContentHint` en `get_product_reviews`, el límite acumulado de cantidad en `add_to_cart` y `checkout` con `consequentialHint` más el diálogo de confirmación de la página. Para mostrar la falla de forma reproducible, cambia a Modo simulado: detén `npm run dev` y corre `npm run server:mock` + `npm run dev:web` (o pon `AGENT_MODE=mock` en `.env`); la insignia dice "Modo simulado". Ese agente obedece la reseña mientras no esté marcada como no confiable.
 
 ### Acto 5 · Cierre (1:25–1:30)
 
