@@ -53,6 +53,8 @@ export interface ChatResponse {
   text?: string;
   functionCalls: FunctionCallPart[];
   rawParts?: unknown[];
+  /** Gemini finishReason of the last model call (informational; clients may ignore it). */
+  finishReason?: string;
 }
 
 export interface HealthResponse {
