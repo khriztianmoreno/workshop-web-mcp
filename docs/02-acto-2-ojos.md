@@ -140,7 +140,7 @@ export const storeTools: readonly ModelContextTool[] = [
 3. **Esperado:**
    - Tarjeta `search_products` con argumentos parecidos a `{"category":"cascos","certification":"ECE 22.06","size":"M","maxPrice":1200000,"inStockOnly":true}`.
    - El catálogo brilla con "Ejecutado por agente" (pero los filtros visibles **no cambian**: es solo lectura).
-   - Respuesta: **únicamente** el Casco integral Altamira GT-R, 980.000 COP.
+   - Respuesta: **únicamente** el Casco integral Altamira GT-R, 980.000 COP. En el Acto 1 no podía ver el catálogo; ahora sí.
 4. Prueba también: "¿Qué tallas quedan de las botas Ruta Andina?" y "¿Qué tengo en el carrito?" (agrega algo a mano antes).
 5. Pruebas reales:
 

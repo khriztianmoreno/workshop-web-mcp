@@ -4,10 +4,13 @@
 
 **Guion:**
 Somos el equipo de Rodada, una tienda de equipo para motociclistas. Llega un ticket de soporte: [leerlo despacio]
-"El asistente me recomendó el Casco Vulcano Pro a 890.000 en talla M. Lo busqué y no existe." [pausa]
-Esta es la conversación. Pregunta concreta, respuesta rápida, con nombre y precio. Suena perfecta. Y es falsa.
-El modelo no está fallando: está adivinando. Solo tiene el texto del chat. [señalar las tres píldoras] No ve el catálogo, no sabe qué tallas quedan, no puede actuar en la página. Es un chatbot mudo para la app.
+"Le pedí al asistente que me armara el kit: un casco certificado, guantes de pista en talla M y el cupón de bienvenida. Me respondió que lo hiciera yo directamente en la página web. ¡Estaba en la página web!" [pausa]
+Esta es la conversación. Pedido concreto, respuesta amable y honesta: "no puedo agregar productos ni aplicar cupones, hazlo en la web". Y totalmente inútil: le devuelve el trabajo al cliente, y el cliente abandona el carrito.
+El modelo no está fallando: no ve ni toca la página. Solo tiene el texto del chat. [señalar las tres píldoras] No ve el catálogo, no sabe qué tallas quedan, no puede actuar en la página. Es un asistente honesto pero inútil.
+Hoy van a escribir lo que le falta: ojos en el Acto 2, manos en el Acto 3. Y en el Acto 3 este mismo pedido se va a ejecutar solo, en cascada. WebMCP no cura las alucinaciones: le da al agente ojos y manos.
 
-**Transición:** "Para que deje de adivinar, necesitamos un agente."
+**Transición:** "Para que pueda ver y actuar, necesitamos un agente."
 
-**Dato (para el final del Acto 2):** la respuesta correcta es solo el Casco integral Altamira GT-R a 980.000 COP. El Nimbo Sport cumple todo salvo que la talla M está agotada.
+**Nota:** es lo que observamos con Gemini y el prompt del sistema del taller (que le prohíbe inventar): "…realiza la búsqueda y la compra directamente a través de la página web de Rodada". Los modelos varían: si en la sala alguno inventa productos o dice que ya agregó algo al carrito, el argumento es aún más fuerte. En ambos casos, no ve ni toca la página.
+
+**Dato (para el final del Acto 2):** la respuesta correcta a la pregunta del catálogo es solo el Casco integral Altamira GT-R a 980.000 COP. El Nimbo Sport cumple todo salvo que la talla M está agotada.

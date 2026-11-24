@@ -150,6 +150,8 @@ Agrega `setFiltersTool`, `addToCartTool`, `applyCouponTool`, `openCartTool` y `c
 
 ## Hito · el prompt jefe (5 min)
 
+Es el mismo pedido del incidente del Acto 1, cuando el asistente respondió que lo hicieras tú en la web. Mismo prompt, mismo modelo; la diferencia es WebMCP.
+
 ```text
 Busca un casco certificado por menos de 1.200.000 COP, agrégalo en talla M junto con unos guantes de pista talla M, aplica el cupón de bienvenida y abre el carrito.
 ```

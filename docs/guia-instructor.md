@@ -223,16 +223,20 @@ La clave por cliente debe ser **tu IP pública** en las dos llamadas. Si ves la 
 
 | Min | Qué hacer | Qué decir (ideas clave) |
 | --- | --- | --- |
-| 0–9 | [Slides de apertura](#slides-de-apertura) (14 slides, guion en las notas) | El ticket, "el modelo no falla: adivina", agente y MCP, WebMCP, `registerTool` + `AbortSignal`, arquitectura, misión y reglas. |
-| 9–10 | Botón **"Acto 1-2 · Cascos ECE"** | Señala que la respuesta suena segura y es falsa. La verdad: solo el Altamira GT-R a 980.000. |
+| 0–9 | [Slides de apertura](#slides-de-apertura) (14 slides, guion en las notas) | El ticket, "el modelo no falla: no ve la página", agente y MCP, WebMCP, `registerTool` + `AbortSignal`, arquitectura, misión y reglas. |
+| 9–10 | Botón **"Acto 3 · Prompt jefe"** (sí, el del Acto 3) | Señala que es honesto pero inútil: no puede buscar, agregar ni aplicar el cupón, y le dice al cliente que lo haga él en la web donde ya está. El carrito sigue vacío. "En el Acto 3, este mismo prompt se ejecuta solo." Si tu modelo inventa productos o dice que ya los agregó, mejor aún: tampoco ve ni toca la página. |
 | 10–14 | Asistentes escriben `useWebMcpTools` + `get_store_info` | Explica StrictMode: montar → limpiar → montar. Quien termine antes: experimento `say_hello` en consola. |
 | 14–15 | Botón **"Acto 1 · Horario"** | Muestra el brillo en la píldora y la tarjeta de la herramienta. |
 
-**Prompt de demo (exacto):**
+**Prompt de demo (exacto, el mismo del Acto 3):**
 
 ```text
-¿Qué cascos certificados ECE 22.06 hay en stock en talla M por menos de 1.200.000?
+Busca un casco certificado por menos de 1.200.000 COP, agrégalo en talla M junto con unos guantes de pista talla M, aplica el cupón de bienvenida y abre el carrito.
 ```
+
+Con Gemini observamos (3 de 3 veces): "En este momento no dispongo de las herramientas necesarias para consultar el catálogo de la tienda, verificar la disponibilidad de productos ni gestionar el carrito de compras… Por favor, realiza la búsqueda y la compra directamente a través de la página web de Rodada."
+
+Comprobación opcional con **"Acto 1-2 · Cascos ECE"**: también responde que no tiene acceso al catálogo. La verdad, para contrastar en el Acto 2: solo el Altamira GT-R a 980.000.
 
 ### Acto 2 · Darle ojos (0:15–0:40)
 
@@ -241,7 +245,7 @@ La clave por cliente debe ser **tu IP pública** en las dos llamadas. Si ves la 
 | 0–5 | Diagrama de secuencia del ciclo del agente | "El proxy no toca la página; la página no ve la clave." |
 | 5–7 | Escribe `search_products` en vivo | "La descripción es para el modelo. `enum` evita que invente categorías." |
 | 7–22 | Asistentes implementan las 5 herramientas | Camina por el salón. Errores típicos: olvidar el índice, no reutilizar `searchProducts`. |
-| 22–25 | Prompt de cascos otra vez | Ahora responde solo el Altamira GT-R. Señala la "trampa" del Nimbo Sport (talla M agotada). |
+| 22–25 | Prompt de cascos otra vez | Antes no podía ver el catálogo; ahora responde solo el Altamira GT-R. Señala la "trampa" del Nimbo Sport (talla M agotada). |
 
 ### Acto 3 · Darle manos (0:40–1:10)
 
@@ -250,7 +254,7 @@ La clave por cliente debe ser **tu IP pública** en las dos llamadas. Si ves la 
 | 0–5 | Diagrama "una sola fuente de verdad" | "La herramienta es otra puerta a la misma acción, no una segunda tienda." |
 | 5–8 | Muestra un error recuperable (`OUT_OF_STOCK` con `details`) | "Un error útil le enseña al modelo cómo reintentar." |
 | 8–25 | Asistentes implementan `set_filters`, `add_to_cart`, `apply_coupon`, `open_cart`, `checkout` ingenuo | Insiste: `checkout` ingenuo es intencional. |
-| 25–30 | **Prompt jefe** en el proyector | Deja que la cascada se vea. Pausa en el carrito: total 1.170.000 COP. |
+| 25–30 | **Prompt jefe** en el proyector | Recuerda el Acto 1: "Mismo prompt, mismo modelo; la diferencia es WebMCP." Deja que la cascada se vea. Pausa en el carrito: total 1.170.000 COP. |
 
 **Prompt jefe (exacto):**
 

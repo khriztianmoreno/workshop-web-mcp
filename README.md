@@ -3,10 +3,10 @@
 > **DevFest Bogotá · 28 de noviembre de 2026 · 90 minutos**
 > Dale ojos y manos a un agente de IA dentro de tu propia página web, sin servidor MCP, con `document.modelContext`.
 
-Rodada es una tienda ficticia de equipo para motociclistas (cascos, chaquetas, guantes, botas y accesorios). Tiene un asistente de compras en un panel lateral que, al comenzar el taller, **no puede ver ni tocar la página**: inventa productos. Durante cinco actos lo convertirás en un agente útil y seguro usando **WebMCP**.
+Rodada es una tienda ficticia de equipo para motociclistas (cascos, chaquetas, guantes, botas y accesorios). Tiene un asistente de compras en un panel lateral que, al comenzar el taller, **no puede ver ni tocar la página**: es honesto pero inútil y manda al cliente a buscar por su cuenta. Durante cinco actos lo convertirás en un agente útil y seguro usando **WebMCP**.
 
 ```text
- Acto 1  El incidente        15 min   El chatbot inventa. Registras tu primera herramienta.
+ Acto 1  El incidente        15 min   El asistente responde "hazlo tú". Registras tu primera herramienta.
  Acto 2  Darle ojos          25 min   Herramientas de lectura (readOnlyHint).
  Acto 3  Darle manos         30 min   Herramientas de escritura que reutilizan las acciones de la UI.
  Acto 4  El sabotaje         15 min   Inyección de prompts en una reseña y defensa en profundidad.

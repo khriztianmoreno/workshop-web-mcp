@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | **15 minutos** (≈9 de slides de apertura + ≈6 de práctica) | `acto-1` | `acto-2` |
 
-**Objetivo:** entender por qué el asistente inventa y registrar tu **primera herramienta WebMCP** de forma correcta (con `AbortSignal` y compatible con StrictMode).
+**Objetivo:** entender por qué el asistente no puede ayudar a comprar y registrar tu **primera herramienta WebMCP** de forma correcta (con `AbortSignal` y compatible con StrictMode).
 
 ---
 
@@ -12,9 +12,11 @@
 
 Lunes, 8:12 a. m. Llega un ticket de soporte:
 
-> "El asistente de la página me recomendó el **Casco Vulcano Pro** a 890.000 en talla M. Lo busqué y no existe. ¿Me están tomando del pelo?"
+> "Le pedí al asistente que me armara el kit: un casco certificado, guantes de pista en talla M y el cupón de bienvenida. Me respondió que **lo hiciera yo directamente en la página web**. ¡Estaba en la página web! Al final no compré nada."
 
-El asistente funciona: el modelo responde rápido y con seguridad. El problema es otro: **no ve la página**. No sabe qué hay en el catálogo, qué tallas quedan ni cuánto cuesta el envío. Así que adivina.
+El asistente funciona: el modelo responde rápido y es honesto. El problema es otro: **no ve ni toca la página**. No sabe qué hay en el catálogo, qué tallas quedan ni cómo agregar algo al carrito. Así que le devuelve el trabajo al cliente ("hazlo tú en la web"), y el cliente abandona el carrito. Es **un asistente honesto pero inútil**.
+
+El arco del taller: en el Acto 1 el mismo pedido termina en "hazlo tú"; en el Acto 2 le das **ojos** y responde con datos reales del catálogo; en el Acto 3 le das **manos** y ese mismo pedido se ejecuta en cascada. WebMCP no cura las alucinaciones: le da al agente ojos y manos.
 
 ## 1. Reproduce el incidente (1 min)
 
@@ -24,13 +26,23 @@ npm run dev
 
 1. Abre [http://localhost:5173](http://localhost:5173).
 2. En el panel **Asistente Rodada**, haz clic en "0 herramientas WebMCP": la lista está vacía.
-3. Envía este prompt (o usa el botón "Acto 1-2 · Cascos ECE"):
+3. Envía el pedido del cliente con el botón "Acto 3 · Prompt jefe". Sí, es el botón del Acto 3: es exactamente lo que vas a lograr que ejecute.
+
+```text
+Busca un casco certificado por menos de 1.200.000 COP, agrégalo en talla M junto con unos guantes de pista talla M, aplica el cupón de bienvenida y abre el carrito.
+```
+
+**Esperado:** una respuesta amable que no hace nada. Con Gemini observamos algo como: "En este momento no dispongo de las herramientas necesarias para consultar el catálogo de la tienda, verificar la disponibilidad de productos ni gestionar el carrito de compras… Por favor, realiza la búsqueda y la compra directamente a través de la página web de Rodada". El cliente ya está en la página y el asistente le dice que lo haga a mano. El carrito sigue vacío.
+
+**Comprobación opcional:** envía también la pregunta del catálogo (botón "Acto 1-2 · Cascos ECE"):
 
 ```text
 ¿Qué cascos certificados ECE 22.06 hay en stock en talla M por menos de 1.200.000?
 ```
 
-**Esperado:** una respuesta segura y específica… sobre productos que no existen. La respuesta correcta es solo **Casco integral Altamira GT-R, 980.000 COP**. (El Nimbo Sport cumple todo, salvo que la talla M está agotada.)
+Responde lo mismo: no tiene acceso al catálogo. La respuesta correcta es solo **Casco integral Altamira GT-R, 980.000 COP**. (El Nimbo Sport cumple todo, salvo que la talla M está agotada.) Guárdala para compararla en el Acto 2.
+
+> **Nota:** los modelos varían. Si el tuyo inventa productos o dice que ya agregó algo al carrito, el argumento es aún más fuerte. En ambos casos el punto es el mismo: el asistente no puede ver ni tocar la página.
 
 ## 2. El modelo mental (visto en las slides de apertura)
 
@@ -169,7 +181,7 @@ export const storeTools: readonly ModelContextTool[] = [
    - Una tarjeta de herramienta `get_store_info` con estado "Completado".
    - La píldora superior ("WebMCP polyfill") brilla con la insignia **"Ejecutado por agente"**.
    - Respuesta correcta: lunes a sábado de 9:00 a 19:00; envío fuera de Bogotá 18.000 COP (2 a 4 días hábiles).
-4. Repite el prompt de los cascos: **sigue inventando**. Eso lo arreglamos en el Acto 2.
+4. Repite el prompt de los cascos o el pedido del kit: **sigue sin poder consultar el catálogo ni tocar el carrito**. El horario funciona porque ahora existe una herramienta para eso; para lo demás todavía responde que no tiene acceso. Los ojos llegan en el Acto 2 y las manos en el Acto 3.
 
 <details>
 <summary>Solución completa del Acto 1</summary>

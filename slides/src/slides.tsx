@@ -34,7 +34,7 @@ import { TALK } from './talk';
  * Opening deck for the 90-minute WebMCP workshop: the first ~9 minutes of
  * Act 1, so attendees keep ~6 minutes of hands-on time.
  *
- * Arc: the incident (a chatbot that invents) → the concepts (agent + MCP, the
+ * Arc: the incident (an honest but useless chatbot) → the concepts (agent + MCP, the
  * gap, WebMCP and its API) → how this repo is built → the mission, the rules
  * and the setup → straight into Act 1.
  *
@@ -221,7 +221,7 @@ function AboutMe() {
 
 // ─── The incident ──────────────────────────────────────────────────────────
 
-/** The support ticket and the "mute chatbot" in one slide. */
+/** The support ticket and the honest but useless chatbot in one slide. */
 function Incidente() {
   const blind: { icon: IconName; text: string }[] = [
     { icon: 'storefront', text: 'No ve el catálogo' },
@@ -229,11 +229,11 @@ function Incidente() {
     { icon: 'touch_app', text: 'No puede actuar en la página' },
   ];
   return (
-    <Content tone="red" label="Lunes, 8:12 a. m. · Ticket de soporte" title="El asistente recomendó un casco que no existe">
+    <Content tone="red" label="Lunes, 8:12 a. m. · Ticket de soporte" title="Le pidió que lo hiciera. Le respondió: hazlo tú.">
       <div className="flex flex-1 items-center gap-16">
         <div className="flex flex-1 flex-col gap-8">
-          <Bubble from="user">¿Qué cascos ECE hay en talla M por menos de 1.200.000?</Bubble>
-          <Bubble from="bot">Te recomiendo el Casco Vulcano Pro a 890.000 en talla M.</Bubble>
+          <Bubble from="user">Agrega un casco ECE y guantes talla M, y aplica el cupón.</Bubble>
+          <Bubble from="bot">No puedo agregar productos ni aplicar cupones. Hazlo en la web.</Bubble>
         </div>
         <div className="flex w-[560px] flex-col gap-5">
           {blind.map((b) => (
@@ -244,8 +244,8 @@ function Incidente() {
           ))}
         </div>
       </div>
-      <Scoreboard ok={false} question="¿El cliente recibió una respuesta correcta?">
-        Lo buscó y no existe. El modelo no falla: adivina, porque solo habla.
+      <Scoreboard ok={false} question="¿El cliente pudo comprar?">
+        Ya estaba en la web. Abandonó el carrito: el modelo no ve ni toca la página.
       </Scoreboard>
     </Content>
   );
@@ -679,8 +679,8 @@ function Vamos() {
         </div>
         <div className="flex w-[1200px] flex-col gap-5">
           <Step n="1" tone="red">
-            Reproduce el incidente con <b>“{DEMO_PROMPT_LABELS.catalog}”</b>:
-            <p className="mt-2 rounded-[20px] border-[3px] border-df-ink bg-white px-6 py-3 text-[26px] italic">“{DEMO_PROMPTS.catalog}”</p>
+            Reproduce el incidente con <b>“{DEMO_PROMPT_LABELS.boss}”</b> (sí, el del Acto 3):
+            <p className="mt-2 rounded-[20px] border-[3px] border-df-ink bg-white px-6 py-3 text-[26px] italic">“{DEMO_PROMPTS.boss}”</p>
           </Step>
           <Step n="2" tone="blue">
             Escribe el hook <Tech>useWebMcpTools</Tech> con <Tech>AbortSignal</Tech>
@@ -711,7 +711,7 @@ const DECK: DeckSlide[] = [
   { id: 'cover', Component: Cover, title: 'Misión: El Checkout Roto' },
   { id: 'about-me', Component: AboutMe, title: 'Quién les habla' },
   // The incident
-  { id: 'incidente', Component: Incidente, title: 'El incidente: un casco que no existe ❌', section: INCIDENTE },
+  { id: 'incidente', Component: Incidente, title: 'El incidente: «hazlo tú» ❌', section: INCIDENTE },
   // Concepts
   { id: 'agente', Component: Agente, title: 'Agente y MCP', section: CONCEPTOS },
   { id: 'brecha', Component: Brecha, title: 'La brecha y la pregunta', section: CONCEPTOS },

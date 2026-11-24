@@ -236,7 +236,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
             <p>Pregúntame por productos, tallas o tu carrito.</p>
             <p className="muted">
               {tools.length === 0
-                ? 'Ahora mismo no tengo herramientas: solo puedo adivinar.'
+                ? 'Ahora mismo no tengo herramientas: no puedo ver la tienda.'
                 : `Puedo usar ${tools.length} herramientas de esta página.`}
             </p>
           </div>

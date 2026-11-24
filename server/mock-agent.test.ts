@@ -73,10 +73,30 @@ describe('mock agent', () => {
     });
   });
 
-  it('acts as a "mute chatbot" without tools (hallucinates)', () => {
+  it('admits it cannot see the catalog without tools (honest but useless, Act 1)', () => {
     const { text, calls } = converse(DEMO_PROMPTS.catalog, [], () => ({}));
     expect(calls).toEqual([]);
-    expect(text).toContain('Vulcano Pro');
+    expect(text).toContain('no tengo acceso al catálogo');
+    expect(text).not.toMatch(/COP|Altamira/);
+  });
+
+  it('answers store info but still cannot see the catalog with only get_store_info (end of Act 1)', () => {
+    const storeTool = [tool('get_store_info')];
+    const storeOutput = () => ({ output: { openingHours: 'Lunes a sábado, 9:00 a 19:00', shipping: [], freeShippingFrom: 300000 } });
+    const hours = converse(DEMO_PROMPTS.storeInfo, storeTool, storeOutput);
+    expect(hours.calls.map((c) => c.name)).toEqual(['get_store_info']);
+    expect(hours.text).toContain('Lunes a sábado');
+    const helmets = converse(DEMO_PROMPTS.catalog, storeTool, storeOutput);
+    expect(helmets.calls).toEqual([]);
+    expect(helmets.text).toContain('no tengo acceso al catálogo');
+  });
+
+  it('hands the boss prompt back to the customer without tools (Act 1 incident)', () => {
+    const { text, calls } = converse(DEMO_PROMPTS.boss, [], () => ({}));
+    expect(calls).toEqual([]);
+    expect(text).toContain('no puedo buscar el casco');
+    expect(text).toContain('directamente en la página web');
+    expect(text).not.toContain('BIENVENIDA10');
   });
 
   it('answers the catalog question with search_products', () => {
