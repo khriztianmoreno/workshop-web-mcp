@@ -45,6 +45,7 @@ npm run dev                      # abre http://localhost:5173
 | --- | --- |
 | `npm run dev` | App + proxy con recarga en caliente |
 | `npm run slides` | Abre las slides de apertura (solo Vite, sin proxy) |
+| `npm run speaker` | Slides en el puerto 5180, para presentar mientras el taller corre en otro clon con `npm run dev` |
 | `npm run guide` | Abre la guía en vivo del taller (solo Vite, sin proxy) |
 | `npm run build:guide` | Build estático solo de la guía en `dist-guide/` (para publicarla) |
 | `npm run server:mock` | Solo el proxy, forzando el modo simulado |
