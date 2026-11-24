@@ -17,6 +17,8 @@ Acto 3  Manos: herramientas de escritura que reutilizan las acciones de la UI
 Acto 4  Defensa en profundidad: untrustedContentHint, límites en la página, consequentialHint + confirmación propia
 ```
 
+**Cómo leerlo:** cada línea es una capa sobre la anterior. Primero el ciclo de vida del registro (Acto 1), luego herramientas que solo observan (Acto 2), después herramientas que actúan con las mismas acciones de la UI (Acto 3) y, al final, las garantías que la página impone aunque el agente se equivoque (Acto 4).
+
 ## WebMCP vs. MCP de servidor
 
 | | WebMCP (`document.modelContext`) | MCP de servidor |

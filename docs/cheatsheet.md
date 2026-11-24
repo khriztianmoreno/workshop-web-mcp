@@ -9,6 +9,11 @@ const modelContext = document.modelContext ?? navigator.modelContext; // navigat
 if (!modelContext) { /* degrada con elegancia */ }
 ```
 
+**Cómo funciona**
+
+- `document.modelContext` es el punto de entrada de la especificación; `navigator.modelContext` solo se mantiene como respaldo para navegadores que aún lo exponen.
+- Si ninguno existe, el navegador no soporta WebMCP: no registres nada y deja que la página funcione igual para las personas.
+
 Requiere contexto seguro (HTTPS o `localhost`). Flag local: `chrome://flags/#enable-webmcp-testing`. Origin trial: Chrome 149–156.
 
 ## Registrar y desregistrar
@@ -43,6 +48,14 @@ await modelContext.registerTool(
 controller.abort(); // desregistra (NO existe unregisterTool)
 ```
 
+**Cómo funciona**
+
+- **`name`, `title`, `description`**: identificador para el agente, etiqueta para personas y manual para el modelo. La `description` es lo que más influye en cuándo y cómo se usa la herramienta.
+- **`inputSchema`**: JSON Schema de los argumentos que el modelo debe enviar (`required`, tipos, `minimum`, `enum`). `outputSchema` describe opcionalmente la forma de la respuesta.
+- **`annotations`**: pistas para el agente. `readOnlyHint` = no cambia estado; `untrustedContentHint` = la salida trae contenido de terceros; `consequentialHint` = efectos reales difíciles de deshacer; `debugging` = solo para depurar.
+- **`execute(input, { signal })`**: corre en la página cuando un agente llama la herramienta; `signal` se aborta si el agente cancela esa ejecución.
+- **`{ signal, exposedTo }`**: `signal` controla la vida del registro (abortarlo desregistra); `exposedTo` lista otros orígenes que pueden ver la herramienta (por defecto, solo el mismo origen).
+
 Registrar dos veces el mismo `name` **lanza un error**.
 
 ## En React (StrictMode-safe)
@@ -50,12 +63,19 @@ Registrar dos veces el mismo `name` **lanza un error**.
 ```ts
 useEffect(() => {
   const mc = document.modelContext ?? navigator.modelContext;
-  if (!mc) return;
-  const controller = new AbortController();
+  if (!mc) return; // no WebMCP: no-op
+  const controller = new AbortController(); // one per effect run
   for (const tool of tools) mc.registerTool(tool, { signal: controller.signal }).catch(console.error);
-  return () => controller.abort();
-}, [tools]);
+  return () => controller.abort(); // cleanup unregisters every tool at once
+}, [tools]); // `tools` must be a stable (module-level) array
 ```
+
+**Cómo funciona**
+
+- `useEffect` ata el registro al ciclo de vida del componente: se registra al montar y se desregistra en la limpieza.
+- Un `AbortController` por ejecución del efecto; abortarlo retira todas sus herramientas, porque no existe `unregisterTool()`.
+- En StrictMode React monta, limpia y vuelve a montar: gracias a la limpieza no hay nombres duplicados. La versión del taller (`src/webmcp/useWebMcpTools.ts`) además ignora los errores de registros que ya fueron abortados.
+- `[tools]` compara por referencia: define el arreglo fuera del componente o cada render volverá a registrar todo.
 
 ## Listar y ejecutar (agentes dentro de la página)
 
@@ -64,6 +84,12 @@ const tools = await modelContext.getTools();                    // RegisteredToo
 const mine  = await modelContext.getTools({ fromOrigins: [location.origin] });
 const text  = await modelContext.executeTool(tools[0], { productId: 'x' }, { signal }); // Promise<string>
 ```
+
+**Cómo funciona**
+
+- Esta es la mitad del **agente**, no la de la página: así es como nuestro panel descubre y ejecuta herramientas.
+- `getTools()` devuelve las herramientas registradas (nombre, descripción, esquema, origen); `fromOrigins` filtra por origen.
+- `executeTool(tool, input, { signal })` ejecuta la herramienta en la página y resuelve con un **string**: el resultado serializado que el agente le pasa al modelo. `signal` permite cancelar la ejecución.
 
 ## Eventos
 
@@ -74,8 +100,11 @@ const text  = await modelContext.executeTool(tools[0], { productId: 'x' }, { sig
 | `toolcancel` | Se canceló una ejecución | `event.toolName` |
 
 ```js
+// Light up the UI the agent is about to touch (the workshop's "Ejecutado por agente" glow).
 modelContext.addEventListener('toolactivated', (e) => highlight(e.toolName));
 ```
+
+**Cómo funciona:** `modelContext` es un `EventTarget`, así que se escucha con `addEventListener`. `toolactivated` llega cuando un agente empieza a ejecutar una herramienta y trae `toolName`; es ideal para mostrarle al usuario qué está haciendo el agente o para registrar métricas. `highlight` es una función tuya.
 
 ## Anotaciones: cuándo usar cada una
 

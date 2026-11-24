@@ -19,15 +19,26 @@
 ```bash
 git clone <URL-del-repositorio> workshop-web-mcp
 cd workshop-web-mcp
-git switch -c mi-taller acto-1
-npm ci
+git switch -c mi-taller acto-1   # your own branch, starting at the Act 1 tag
+npm ci                           # exact versions from package-lock.json
 ```
+
+**Cómo funciona**
+
+- `git clone … workshop-web-mcp` descarga el repositorio en la carpeta `workshop-web-mcp`, con todas sus ramas y tags (`acto-1` … `acto-4`, `final`).
+- `git switch -c mi-taller acto-1` crea **tu propia rama** `mi-taller` a partir del tag `acto-1` (el punto de partida del taller) y te cambia a ella. Un tag es una foto fija: trabajar en tu rama evita perder cambios y te deja comparar con los tags de solución.
+- `npm ci` instala exactamente las versiones de `package-lock.json`, borrando antes `node_modules`. A diferencia de `npm install`, nunca actualiza el lockfile, así todos tienen las mismas dependencias.
 
 ## 3. Configura el entorno (opcional pero recomendado)
 
 ```bash
 cp env.example .env
 ```
+
+**Cómo funciona**
+
+- Copia la plantilla `env.example` (versionada, sin secretos) a `.env`, que es el archivo que leen el proxy (`server/`) y Vite. Así tu clave queda en un archivo local que Git ignora.
+- `GEMINI_API_KEY` activa un modelo real a través del proxy local; `AGENT_BASE_URL` hace que Vite reenvíe las llamadas a `/api` hacia el proxy del instructor (la URL incluye el token `/t/<token>`). Si dejas ambas vacías, el proxy usa el agente simulado.
 
 Abre `.env`. Tienes tres opciones para el asistente:
 
@@ -47,6 +58,11 @@ Las tres opciones sirven para completar el taller.
 npm run check
 ```
 
+**Cómo funciona**
+
+- Ejecuta `scripts/check-env.mjs`: revisa la versión de Node, que existan las dependencias y el `.env`, qué modo de asistente usarás (clave propia, proxy del instructor o simulado) y si el proxy responde.
+- No modifica nada; solo diagnostica. Por eso es lo primero que te pediremos si algo falla.
+
 Deberías ver algo así:
 
 ```text
@@ -58,6 +74,8 @@ Deberías ver algo así:
 Todo listo (con 2 aviso(s)).
 ```
 
+**Cómo leerlo:** cada línea es una comprobación. ✔ está bien, ⚠ es un aviso que no bloquea (aquí: sin clave se usa el modo simulado, y el proxy todavía no está encendido porque no corriste `npm run dev`), ✖ es un error que debes resolver.
+
 Los avisos (⚠) no bloquean. Los errores (✖) sí: resuélvelos antes del taller.
 
 ## 5. Prueba la app
@@ -65,6 +83,11 @@ Los avisos (⚠) no bloquean. Los errores (✖) sí: resuélvelos antes del tall
 ```bash
 npm run dev
 ```
+
+**Cómo funciona**
+
+- Arranca dos procesos a la vez con `concurrently`: `web` (Vite, la tienda en `http://localhost:5173`) y `proxy` (el servidor de `server/` en `http://localhost:8787`, que habla con Gemini o con el agente simulado).
+- Vite reenvía las peticiones a `/api` hacia el proxy, así la clave nunca llega al navegador. Ambos procesos se recargan solos al guardar; `Ctrl+C` detiene los dos.
 
 Abre [http://localhost:5173](http://localhost:5173). Debes ver la tienda Rodada y, a la derecha, el panel **Asistente Rodada** con la insignia "Modo simulado" o "Gemini · …". Con la app encendida, vuelve a correr `npm run check` en otra terminal: el aviso del proxy debe desaparecer.
 
