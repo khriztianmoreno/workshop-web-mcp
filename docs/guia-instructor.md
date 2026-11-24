@@ -44,7 +44,7 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 
 ## Slides de apertura
 
-Son los primeros **≈9 minutos** del Acto 1 (14 slides) y dejan **≈6 minutos de práctica**. Cubren el ticket, el modelo mental (agente, MCP, WebMCP y su API), la arquitectura del repo, la misión, las reglas y la verificación del entorno. Cada slide tiene notas con guion, tiempo y reloj acumulado.
+Son los primeros **≈9 minutos** del Acto 1 (15 slides) y dejan **≈6 minutos de práctica**. Cuentan una historia, primero el problema: el ticket del asistente que responde "hazlo tú", por qué hoy hacer que un asistente actúe obliga a cablear todo a mano, WebMCP y por qué ponerlo en sus proyectos; después la API, la arquitectura del repo, la misión, las reglas y la verificación del entorno. Cada slide tiene notas con guion, tiempo y reloj acumulado.
 
 **Dónde viven:** `slides/` en la rama `main`. Los tags `acto-1`…`final` no las incluyen, así que preséntalas desde una copia en `main` (por ejemplo, la misma donde preparas la demo final), mientras el taller corre con `npm run dev` desde otro clon en `acto-1`. Con `npm run speaker` las slides usan el puerto 5180 y no chocan con la tienda en el 5173.
 
@@ -224,7 +224,7 @@ La clave por cliente debe ser **tu IP pública** en las dos llamadas. Si ves la 
 
 | Min | Qué hacer | Qué decir (ideas clave) |
 | --- | --- | --- |
-| 0–9 | [Slides de apertura](#slides-de-apertura) (14 slides, guion en las notas) | El ticket, "el modelo no falla: no ve la página", agente y MCP, WebMCP, `registerTool` + `AbortSignal`, arquitectura, misión y reglas. |
+| 0–9 | [Slides de apertura](#slides-de-apertura) (15 slides, guion en las notas) | El ticket, "el modelo no falla: no ve la página", por qué cuesta que un asistente actúe, WebMCP y por qué usarlo, `registerTool` + `AbortSignal`, arquitectura, misión y reglas. |
 | 9–10 | Botón **"Acto 3 · Prompt jefe"** (sí, el del Acto 3) | Señala que es honesto pero inútil: no puede buscar, agregar ni aplicar el cupón, y le dice al cliente que lo haga él en la web donde ya está. El carrito sigue vacío. "En el Acto 3, este mismo prompt se ejecuta solo." Si tu modelo inventa productos o dice que ya los agregó, mejor aún: tampoco ve ni toca la página. |
 | 10–14 | Asistentes escriben `useWebMcpTools` + `get_store_info` | Explica StrictMode: montar → limpiar → montar. Quien termine antes: experimento `say_hello` en consola. |
 | 14–15 | Botón **"Acto 1 · Horario"** | Muestra el brillo en la píldora y la tarjeta de la herramienta. |

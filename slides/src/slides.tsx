@@ -34,9 +34,11 @@ import { TALK } from './talk';
  * Opening deck for the 90-minute WebMCP workshop: the first ~9 minutes of
  * Act 1, so attendees keep ~6 minutes of hands-on time.
  *
- * Arc: the incident (an honest but useless chatbot) → the concepts (agent + MCP, the
- * gap, WebMCP and its API) → how this repo is built → the mission, the rules
- * and the setup → straight into Act 1.
+ * Arc, problem first: the incident (our own in-app assistant answers "do it
+ * yourself") → making it act today means wiring every action by hand → the
+ * page already knows how → WebMCP and why it belongs in your project → how it works (registerTool,
+ * agent side, security, vs. server MCP) → how this repo is built → the mission,
+ * the rules and the setup → straight into Act 1.
  *
  * Copy rules (same as the talk deck): one message per slide, neutral Spanish
  * (no voseo), API and product names in English, plain words first and the
@@ -47,8 +49,9 @@ import { TALK } from './talk';
 // ─── Sections (badge on every slide of the section) ───────────────────────
 
 const INCIDENTE: Section = { name: 'Acto 1', detail: 'El incidente' };
-const CONCEPTOS: Section = { name: 'Conceptos' };
-const WEBMCP: Section = { name: 'Conceptos', detail: 'WebMCP' };
+const PROBLEMA: Section = { name: 'El problema' };
+const WEBMCP: Section = { name: 'La solución', detail: 'WebMCP' };
+const COMO: Section = { name: 'WebMCP', detail: 'Cómo funciona' };
 const TALLER: Section = { name: 'El taller' };
 
 // ─── Shared pieces ─────────────────────────────────────────────────────────
@@ -219,9 +222,9 @@ function AboutMe() {
   );
 }
 
-// ─── The incident ──────────────────────────────────────────────────────────
+// ─── The problem ───────────────────────────────────────────────────────────
 
-/** The support ticket and the honest but useless chatbot in one slide. */
+/** The support ticket: the agent hands the work back to the customer. */
 function Incidente() {
   const blind: { icon: IconName; text: string }[] = [
     { icon: 'storefront', text: 'No ve el catálogo' },
@@ -229,7 +232,7 @@ function Incidente() {
     { icon: 'touch_app', text: 'No puede actuar en la página' },
   ];
   return (
-    <Content tone="red" label="Lunes, 8:12 a. m. · Ticket de soporte" title="Le pidió que lo hiciera. Le respondió: hazlo tú.">
+    <Content tone="red" label="Lanzamos el asistente de IA · Primer ticket" title="Le pidió que lo hiciera. Le respondió: hazlo tú.">
       <div className="flex flex-1 items-center gap-16">
         <div className="flex flex-1 flex-col gap-8">
           <Bubble from="user">Agrega un casco ECE y guantes talla M, y aplica el cupón.</Bubble>
@@ -245,62 +248,39 @@ function Incidente() {
         </div>
       </div>
       <Scoreboard ok={false} question="¿El cliente pudo comprar?">
-        Ya estaba en la web. Abandonó el carrito: el modelo no ve ni toca la página.
+        Ya estaba en la web y abandonó el carrito. El asistente solo sabe responder.
       </Scoreboard>
     </Content>
   );
 }
 
-// ─── Concepts ──────────────────────────────────────────────────────────────
-
-/** Agent = model + tools + loop, and MCP as the standard way to ship the tools. */
-function Agente() {
+/** Why most in-app assistants stay at FAQ level: acting means wiring everything by hand. */
+function Problema() {
+  const costs: { icon: IconName; title: string; fill: BoxFill; body: ReactNode }[] = [
+    { icon: 'build', title: 'Cablear cada acción', fill: 'white', body: <>Describir cada función para el modelo, una por una.</> },
+    { icon: 'dns', title: 'Duplicar la lógica', fill: 'yellow', body: <>Un backend nuevo que repite lo que ya hace la UI.</> },
+    { icon: 'sync', title: 'Mantenerlo en sync', fill: 'blue', body: <>Cada cambio en la UI hay que replicarlo.</> },
+  ];
   return (
-    <Content tone="blue" label="Primero, dos definiciones" title="Un agente es un modelo que usa herramientas en un ciclo">
-      <div className="flex items-stretch justify-center gap-8">
-        <IconCard icon="psychology" title="Modelo" fill="white" className="w-[420px]">
-          Entiende el pedido y decide.
-        </IconCard>
-        <p aria-hidden className="self-center text-[72px] font-bold">
-          +
-        </p>
-        <IconCard icon="build" title="Herramientas" fill="blue" className="w-[420px]">
-          Funciones con nombre y esquema.
-        </IconCard>
-        <p aria-hidden className="self-center text-[72px] font-bold">
-          +
-        </p>
-        <IconCard icon="sync" title="Ciclo" fill="yellow" className="w-[420px]">
-          Pide, ejecuta, lee, repite.
-        </IconCard>
+    <Content tone="red" label="El problema de fondo" title="Para que actúe, hay que cablearlo a mano">
+      <div className="grid grid-cols-3 gap-10">
+        {costs.map((c) => (
+          <IconCard key={c.title} icon={c.icon} title={c.title} fill={c.fill} className="h-[290px]">
+            {c.body}
+          </IconCard>
+        ))}
       </div>
-      <div className="flex w-fit max-w-[1180px] flex-col gap-4 rounded-[28px] border-[3px] border-df-ink bg-white px-10 py-5">
-        <p className="text-[30px] font-bold">
-          <Mark tone="blue">MCP</Mark> las estandariza en un servidor aparte, con su propia auth
-        </p>
-        <div className="flex items-center gap-6">
-        <Pill fill="white" className="px-6 py-2 text-[28px]">
-          <Icon name="smart_toy" className="h-8 w-8" />
-          Cliente
-        </Pill>
-        <div className="flex flex-col items-center">
-          <Tech className="text-[24px] text-df-soft">tools/list · tools/call</Tech>
-          <Arrow className="w-48" />
-        </div>
-        <Pill fill="blue" className="px-6 py-2 text-[28px]">
-          <Icon name="dns" className="h-8 w-8" />
-          Servidor MCP
-        </Pill>
-        </div>
-      </div>
+      <h3 className="mt-auto max-w-[1600px] text-balance text-[64px] font-bold leading-[1.1]">
+        Por eso casi todos los asistentes <Mark tone="red">se quedan en preguntas frecuentes</Mark>.
+      </h3>
     </Content>
   );
 }
 
-/** The app already has everything; ends on the question that introduces WebMCP. */
+/** The page already has everything; it just doesn't tell the agent. */
 function Brecha() {
   const has: { icon: IconName; title: string; fill: BoxFill; body: ReactNode }[] = [
-    { icon: 'storefront', title: 'El estado', fill: 'white', body: <>Catálogo, filtros y carrito ya en memoria.</> },
+    { icon: 'storefront', title: 'El estado', fill: 'white', body: <>Catálogo, tallas y carrito ya en memoria.</> },
     { icon: 'login', title: 'La sesión', fill: 'yellow', body: <>El usuario ya inició sesión.</> },
     {
       icon: 'touch_app',
@@ -314,7 +294,7 @@ function Brecha() {
     },
   ];
   return (
-    <Content tone="yellow" label="La brecha" title="Tu app web ya tiene todo lo que el agente necesita">
+    <Content tone="yellow" label="¿Quién puede arreglarlo?" title="Tu página ya sabe hacerlo bien">
       <div className="grid grid-cols-3 gap-10">
         {has.map((h) => (
           <IconCard key={h.title} icon={h.icon} title={h.title} fill={h.fill} className="h-[290px]">
@@ -323,12 +303,15 @@ function Brecha() {
         ))}
       </div>
       <h3 className="mt-auto max-w-[1600px] text-balance text-[64px] font-bold leading-[1.1]">
-        ¿Y si la página le diera <Mark tone="yellow">sus propias herramientas</Mark> al agente?
+        Solo que <Mark tone="yellow">no se lo dice al asistente</Mark>.
       </h3>
     </Content>
   );
 }
 
+// ─── The solution ──────────────────────────────────────────────────────────
+
+/** WebMCP in three actors, tied back to the MCP the audience already knows. */
 function QueEs() {
   const steps: { icon: IconName; title: string; fill: BoxFill; body: ReactNode }[] = [
     {
@@ -337,7 +320,7 @@ function QueEs() {
       fill: 'white',
       body: (
         <>
-          Registra lo que sabe hacer: <Tech>search_products</Tech>
+          Declara lo que sabe hacer: <Tech>search_products</Tech>
         </>
       ),
     },
@@ -351,10 +334,10 @@ function QueEs() {
         </>
       ),
     },
-    { icon: 'smart_toy', title: 'El agente', fill: 'yellow', body: <>Las llama como funciones. Sin clics, sin scraping.</> },
+    { icon: 'smart_toy', title: 'Tu asistente', fill: 'yellow', body: <>Las lista y las llama como funciones.</> },
   ];
   return (
-    <Content tone="blue" label="WebMCP" title="La página registra herramientas y el agente las llama">
+    <Content tone="blue" label="WebMCP" title="La página declara sus acciones una sola vez">
       <div className="flex flex-1 items-center gap-6">
         {steps.map((s, i) => (
           <div key={s.title} className="flex flex-1 items-center gap-6">
@@ -365,12 +348,50 @@ function QueEs() {
           </div>
         ))}
       </div>
-      <p className="text-[36px] font-medium">
-        Corre <Mark tone="green">en la pestaña, con la sesión del usuario</Mark> y la misma lógica de la UI.
-      </p>
+      <div className="flex w-fit items-center gap-6 rounded-[28px] border-[3px] border-df-ink bg-white px-10 py-5">
+        <Pill fill="blue" className="px-6 py-2 text-[28px]">
+          <Icon name="dns" className="h-8 w-8" />
+          ¿Conocen MCP?
+        </Pill>
+        <p className="text-[32px] font-medium">
+          Misma idea, pero <Mark tone="green">las declara la página, con el usuario presente</Mark>.
+        </p>
+      </div>
     </Content>
   );
 }
+
+/** Why it belongs in your own project. */
+function PorQue() {
+  const wins: { icon: IconName; title: string; fill: BoxFill; body: ReactNode }[] = [
+    { icon: 'touch_app', title: 'Actúa', fill: 'green', body: <>Deja de responder y empieza a hacer.</> },
+    { icon: 'code', title: 'Tu código', fill: 'white', body: <>Las funciones de tus botones. Sin backend nuevo.</> },
+    { icon: 'shield', title: 'Bajo control', fill: 'yellow', body: <>Tú decides qué expones y qué pide confirmación.</> },
+    { icon: 'public', title: 'Lo que viene', fill: 'blue', body: <>Los agentes del navegador podrán usar las mismas.</> },
+  ];
+  const hints = ['readOnlyHint', 'untrustedContentHint', 'consequentialHint'];
+  return (
+    <Content tone="green" label="¿Por qué en tu proyecto?" title="De un asistente que responde a uno que actúa">
+      <div className="grid flex-1 grid-cols-4 gap-8">
+        {wins.map((w) => (
+          <IconCard key={w.title} icon={w.icon} title={w.title} fill={w.fill}>
+            {w.body}
+          </IconCard>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-5">
+        <p className="text-[28px] font-bold">Le dices al agente cómo tratar cada una:</p>
+        {hints.map((h) => (
+          <Pill key={h} fill="white" className="px-6 py-2 font-df-code text-[24px]">
+            {h}
+          </Pill>
+        ))}
+      </div>
+    </Content>
+  );
+}
+
+// ─── How it works ──────────────────────────────────────────────────────────
 
 /** Anatomy of a tool + registration with an AbortSignal, around one code card. */
 function Registro() {
@@ -382,7 +403,7 @@ function Registro() {
     ['annotations', 'Cómo tratarla'],
   ];
   return (
-    <Content tone="green" label="Anatomía · registerTool(tool, { signal }) · DevTools → Console" title="Cinco partes y un AbortSignal">
+    <Content tone="green" label="Anatomía · registerTool(tool, { signal }) · DevTools → Console" title="Así se ve una herramienta">
       <div className="flex flex-1 gap-10">
         <Code code={REGISTER_TOOL} dense compact className="flex-1 self-start" />
         <div className="flex w-[420px] shrink-0 flex-col gap-2">
@@ -406,30 +427,17 @@ function Registro() {
 function LadoAgente() {
   const cols: { title: string; fill: BoxFill; items: [string, string][] }[] = [
     {
-      title: 'El agente usa',
+      title: 'El agente pide',
       fill: 'blue',
       items: [
-        ['getTools()', 'lista lo registrado'],
-        ['executeTool()', 'ejecuta una herramienta'],
+        ['getTools()', 'qué herramientas hay'],
+        ['executeTool()', 'ejecuta una'],
       ],
     },
     {
-      title: 'Eventos',
+      title: 'La página se entera',
       fill: 'yellow',
-      items: [
-        ['toolchange', 'cambió la lista'],
-        ['toolactivated', 'el agente usó una'],
-        ['toolcancel', 'se canceló'],
-      ],
-    },
-    {
-      title: 'Anotaciones',
-      fill: 'red',
-      items: [
-        ['readOnlyHint', 'solo lee'],
-        ['untrustedContentHint', 'devuelve texto ajeno'],
-        ['consequentialHint', 'tiene consecuencias'],
-      ],
+      items: [['toolactivated', 'el agente usó una: la UI la ilumina']],
     },
   ];
   const status: ReactNode[] = [
@@ -442,8 +450,8 @@ function LadoAgente() {
     <Tech>chrome://flags/#enable-webmcp-testing</Tech>,
   ];
   return (
-    <Content tone="blue" label="El resto de la API" title="El otro lado: lo que ve y usa el agente">
-      <div className="grid grid-cols-3 gap-8">
+    <Content tone="blue" label="Del otro lado" title="El agente solo lista y llama">
+      <div className="grid grid-cols-2 gap-8">
         {cols.map((c) => (
           <Box key={c.title} fill={c.fill} className="gap-2 py-5">
             <p className="text-[34px] font-bold">{c.title}</p>
@@ -470,6 +478,27 @@ function LadoAgente() {
         </ul>
       </Box>
     </Content>
+  );
+}
+
+function Seguridad() {
+  return (
+    <Statement label="Un aviso para más tarde" tone="red">
+      <h1 className="text-balance text-[68px] font-bold leading-[1.08]">
+        ¿Y si un texto ajeno <Mark tone="red">le da órdenes al agente?</Mark>
+      </h1>
+      <div className="flex flex-col gap-4">
+        <Pill fill="white" className="px-7 py-3 text-[28px]">
+          <Icon name="warning" className="h-8 w-8" />
+          Inyección de prompts
+        </Pill>
+        <Pill fill="white" className="px-7 py-3 text-[28px]">
+          <Icon name="verified_user" className="h-8 w-8" />
+          Las anotaciones son pistas, no controles
+        </Pill>
+      </div>
+      <p className="text-[32px] leading-snug">Guarden esta idea. En el Acto 4 alguien va a intentar darle órdenes a su agente.</p>
+    </Statement>
   );
 }
 
@@ -519,27 +548,6 @@ function VsMcp() {
         <CompareColumn icon="dns" title="MCP de servidor" fill="blue" items={server} />
       </Region>
     </Frame>
-  );
-}
-
-function Seguridad() {
-  return (
-    <Statement label="Un aviso para más tarde" tone="red">
-      <h1 className="text-balance text-[68px] font-bold leading-[1.08]">
-        La amenaza real no es el usuario. <Mark tone="red">Es el texto que lee el agente.</Mark>
-      </h1>
-      <div className="flex flex-col gap-4">
-        <Pill fill="white" className="px-7 py-3 text-[28px]">
-          <Icon name="warning" className="h-8 w-8" />
-          Inyección de prompts
-        </Pill>
-        <Pill fill="white" className="px-7 py-3 text-[28px]">
-          <Icon name="verified_user" className="h-8 w-8" />
-          Las anotaciones son pistas, no controles
-        </Pill>
-      </div>
-      <p className="text-[32px] leading-snug">Guarda esta idea. En el Acto 4 alguien va a intentar darle órdenes a tu agente.</p>
-    </Statement>
   );
 }
 
@@ -644,10 +652,10 @@ function Setup() {
   return (
     <Content tone="green" label="Verificación rápida · Node 22.12 o superior" title="¿Todo listo? Verifica tu entorno">
       <Code code={SETUP} lang="sh" file="Terminal" size="lg" />
-      <div className="flex flex-wrap gap-5">
+      <div className="flex flex-wrap gap-4">
         {room.map((r) => (
-          <Pill key={r.label} fill="white" className="px-7 py-3 text-[26px]">
-            <Icon name={r.icon} className="h-8 w-8" />
+          <Pill key={r.label} fill="white" className="px-6 py-2 text-[22px]">
+            <Icon name={r.icon} className="h-7 w-7" />
             <span className="text-df-soft">{r.label}</span>
             <span className="font-df-code">{r.value}</span>
           </Pill>
@@ -710,16 +718,18 @@ export type DeckSlide = {
 const DECK: DeckSlide[] = [
   { id: 'cover', Component: Cover, title: 'Misión: El Checkout Roto' },
   { id: 'about-me', Component: AboutMe, title: 'Quién les habla' },
-  // The incident
+  // The problem
   { id: 'incidente', Component: Incidente, title: 'El incidente: «hazlo tú» ❌', section: INCIDENTE },
-  // Concepts
-  { id: 'agente', Component: Agente, title: 'Agente y MCP', section: CONCEPTOS },
-  { id: 'brecha', Component: Brecha, title: 'La brecha y la pregunta', section: CONCEPTOS },
+  { id: 'problema', Component: Problema, title: 'Hacerlo actuar cuesta', section: PROBLEMA },
+  { id: 'brecha', Component: Brecha, title: 'La página ya sabe hacerlo', section: PROBLEMA },
+  // The solution
   { id: 'que-es', Component: QueEs, title: 'Qué es WebMCP', section: WEBMCP },
-  { id: 'registro', Component: Registro, title: 'Anatomía + registerTool', section: WEBMCP },
-  { id: 'lado-agente', Component: LadoAgente, title: 'Lado del agente + estado', section: WEBMCP },
-  { id: 'vs-mcp', Component: VsMcp, title: 'WebMCP vs. MCP de servidor', section: WEBMCP },
-  { id: 'seguridad', Component: Seguridad, title: 'Avance: inyección de prompts', section: WEBMCP },
+  { id: 'por-que', Component: PorQue, title: 'Por qué en tu proyecto', section: WEBMCP },
+  // How it works
+  { id: 'registro', Component: Registro, title: 'Anatomía + registerTool', section: COMO },
+  { id: 'lado-agente', Component: LadoAgente, title: 'Lado del agente + estado', section: COMO },
+  { id: 'seguridad', Component: Seguridad, title: 'Avance: inyección de prompts', section: COMO },
+  { id: 'vs-mcp', Component: VsMcp, title: 'WebMCP vs. MCP de servidor', section: COMO },
   // The workshop
   { id: 'arquitectura', Component: Arquitectura, title: 'Arquitectura del taller', section: TALLER },
   { id: 'mision', Component: Mision, title: 'La misión y las reglas', section: TALLER },

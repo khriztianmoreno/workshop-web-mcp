@@ -1,10 +1,12 @@
-# La brecha y la pregunta
+# La página ya sabe hacerlo
 
-**Tiempo:** ~30 s · **Reloj:** 2:30 → 3:00
+**Tiempo:** ~30 s · **Reloj:** 2:15 → 2:45
 
 **Guion:**
-Nuestra app web ya tiene todo lo que el agente necesita: el estado en memoria, la sesión del usuario y las acciones que ya disparan los botones. [señalar cada tarjeta]
-Un servidor MCP para la tienda nos obligaría a duplicar lógica, rehacer la autenticación y sincronizar estado que ya está en la pestaña. [pausa]
-[leer la pregunta de abajo] ¿Y si la página le diera sus propias herramientas al agente?
+Su propia página. Ella ya sabe buscar un casco, agregarlo al carrito y aplicar un cupón. [señalar cada tarjeta]
+Ya tiene **el estado**: el catálogo, las tallas y el carrito en memoria.
+Ya tiene **la sesión**: el usuario ya entró.
+Y ya tiene **las acciones**: el botón "Agregar" llama a `addToCart()`. [pausa]
+[leer la frase de abajo] Solo que no se lo dice al asistente. Todo lo que el asistente necesita ya está en la pestaña.
 
-**Transición:** "Esa es exactamente la idea de WebMCP."
+**Transición:** "¿Y si la página se lo dijera? Eso es WebMCP."

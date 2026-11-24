@@ -1,15 +1,15 @@
 # Anatomía + registerTool
 
-**Tiempo:** ~50 s · **Reloj:** 3:40 → 4:30
+**Tiempo:** ~45 s · **Reloj:** 4:15 → 5:00
 
 **Guion:**
-Una herramienta tiene cinco partes. [señalar la columna derecha mientras recorres el código]
+Así se ve una herramienta: una función normal, con instrucciones para el modelo. Tiene cinco partes. [señalar la columna derecha mientras recorres el código]
 - `name`: único, en snake_case y sin tildes.
 - `description`: **para el modelo, no para humanos**. Es lo que más influye en que la elija bien.
-- `inputSchema`: JSON Schema de lo que recibe.
-- `execute()`: tu código de siempre.
-- `annotations`: pistas como `readOnlyHint`. [pausa]
-Y lo más importante de la slide: **no existe `unregisterTool()`**. Pasas un `signal` y, para quitarla, abortas el controller. Registrar dos veces el mismo nombre lanza un error.
+- `inputSchema`: JSON Schema de los datos que recibe.
+- `execute()`: su código de siempre.
+- `annotations`: las pistas que acabamos de ver, como `readOnlyHint`. [pausa]
+Se registra con `document.modelContext.registerTool(tool, { signal })`. Y ojo con esto: **no existe `unregisterTool()`**. Para quitarla, abortan la señal. Registrar dos veces el mismo nombre lanza un error.
 
 **Por qué importa (lo van a escribir en 6 minutos):** React StrictMode monta, limpia y vuelve a montar. Sin `controller.abort()` en la limpieza, el segundo montaje revienta con "already registered".
 
@@ -17,4 +17,4 @@ Y lo más importante de la slide: **no existe `unregisterTool()`**. Pasas un `si
 
 **Si quieres una anécdota (Acto 3, del ensayo):** sin `inputSchema` ni `description`, el modelo inventa los nombres y valores de los argumentos: mandó `{"couponCode":"BIENVENIDA"}`. Y "cupón de bienvenida" llega a `BIENVENIDA10` solo porque la descripción de `apply_coupon` da ese ejemplo. La descripción es la interfaz.
 
-**Transición:** "Eso hace la página. ¿Qué ve el agente?"
+**Transición:** "Eso hace la página. ¿Y el agente qué hace con eso?"

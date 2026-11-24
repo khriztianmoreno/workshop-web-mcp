@@ -4,9 +4,9 @@
 
 **Guion:**
 Buenos días. Bienvenidos a "Misión: El Checkout Roto". [pausa]
-En 90 minutos van a convertir un asistente de compras que no ve ni toca la página en un agente útil y seguro, con WebMCP. Ustedes escriben el código; yo pongo el contexto y el reloj.
+Alcen la mano: ¿a quién le han pedido, o quién ya construyó, un chatbot o asistente de IA para su app? [pausa] Ahora, ¿ese asistente puede *hacer* algo, o solo responde preguntas? Hoy vamos a ver por qué casi todos se quedan respondiendo, y en 90 minutos ustedes van a lograr que uno actúe, con código, en una tienda real.
 
-**Termómetro (una sola pregunta, alcen la mano):** "…si ya conectaron una app a un modelo con herramientas o function calling." Muchas manos → pasa más rápido por `agente`.
+**Termómetro:** la pregunta del chatbot ya sirve de termómetro. Lo único que damos por sabido es qué es MCP, más o menos; si en `que-es` notas caras de duda, usa la frase de rescate de esa nota.
 
 **Transición:** "Diez segundos sobre quién les habla."
 
