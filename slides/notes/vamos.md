@@ -4,7 +4,7 @@
 
 **Guion:**
 Seis minutos de práctica. La guía es `docs/01-acto-1-incidente.md`.
-1. Reproduzcan el incidente con el botón "Acto 3 · Prompt jefe". Sí, es el del Acto 3: es exactamente lo que van a lograr que ejecute. Hoy les va a responder que lo hagan ustedes en la web.
+1. Reproduzcan el incidente con el botón "Acto 3 · Prompt jefe". Sí, es el del Acto 3: es exactamente lo que van a lograr que ejecute. Hoy, lo más probable es que les responda que lo hagan ustedes en la web; la redacción cambia según el modelo.
 2. Escriban el hook `useWebMcpTools` con `AbortSignal`.
 3. Registren `get_store_info` y agréguenla a `storeTools`.
 4. Verifiquen con el botón "Acto 1 · Horario": la píldora brilla y dice "Ejecutado por agente". [pausa]

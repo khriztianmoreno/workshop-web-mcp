@@ -13,8 +13,8 @@ export const TALK = {
   site: 'khriztianmoreno.dev',
   /** Public clone URL of this repository. */
   repoUrl: 'github.com/khriztianmoreno/workshop-web-mcp',
-  /** Instructor proxy for attendees without a Gemini key (AGENT_BASE_URL). */
-  proxyUrl: '[URL del proxy]',
+  /** Instructor proxy for attendees without a Gemini key (AGENT_BASE_URL). Never put the real token here: share it privately. */
+  proxyUrl: 'workshop-webmcp.khriztianmoreno.cloud/t/<token>',
   wifi: '[red · clave]',
   /** Published live guide (npm run build:guide → GitHub Pages). Locally: http://localhost:5173/guide/ */
   guideUrl: 'khriztianmoreno.github.io/workshop-web-mcp',
