@@ -179,10 +179,64 @@ export const storeTools: readonly ModelContextTool[] = [
    **Cómo funciona:** `git checkout acto-3 -- <archivo>` trae solo el archivo de pruebas del Acto 2 desde el tag de solución, sin tocar tu código ni cambiar de rama; `npm test` lo ejecuta con Vitest contra tus herramientas.
 
 <details>
-<summary>Solución: get_product_details, get_product_reviews, get_cart y get_active_filters</summary>
+<summary>Solución completa del Acto 2</summary>
+
+Aquí está cada archivo del Acto 2, exactamente como queda en el tag `acto-3`, para que puedas copiarlo archivo por archivo. Las explicaciones están en la sección Tareas.
+
+**src/webmcp/tools/search-products.ts**
 
 ```ts
-// src/webmcp/tools/get-product-details.ts
+import type { Category, Certification } from '../../data/types';
+import { searchProducts } from '../../store/selectors';
+import { defineTool } from '../types';
+import { categorySchema, certificationSchema, sizeSchema } from './schemas';
+import { toProductSummary } from './serializers';
+
+// TypeScript view of the arguments; inputSchema below is what the model actually sees.
+export interface SearchProductsInput {
+  query?: string;
+  category?: Category;
+  certification?: Certification;
+  maxPrice?: number;
+  size?: string;
+  inStockOnly?: boolean;
+}
+
+export const searchProductsTool = defineTool<SearchProductsInput>({
+  name: 'search_products',
+  title: 'Buscar productos',
+  // Tells the model what it gets back AND what it does not do (it points to set_filters instead).
+  description:
+    'Searches the Rodada motorcycle gear catalog. All filters are optional and combined with AND. ' +
+    'Returns product ids, prices in COP, certifications and which sizes are in stock. ' +
+    'Does not change what the user sees; use set_filters for that.',
+  inputSchema: {
+    type: 'object',
+    // No `required`: every filter is optional.
+    properties: {
+      query: { type: 'string', description: 'Free text, e.g. "integral", "pista", "Altamira".' },
+      // Shared fragments with an `enum`, so the model can only pick values that exist.
+      category: categorySchema,
+      certification: certificationSchema,
+      // A number in COP, not "1.200.000" as text.
+      maxPrice: { type: 'number', description: 'Maximum price in COP, e.g. 1200000.' },
+      size: { ...sizeSchema, description: 'Only products with stock in this size.' },
+      inStockOnly: { type: 'boolean', description: 'Only products with stock in at least one variant.' },
+    },
+  },
+  annotations: { readOnlyHint: true },
+  async execute(input) {
+    // Same function the filters bar uses: one source of truth.
+    const results = searchProducts(input);
+    // Small output: summaries with reusable ids, not full products with reviews.
+    return { count: results.length, products: results.map(toProductSummary) };
+  },
+});
+```
+
+**src/webmcp/tools/get-product-details.ts**
+
+```ts
 import { findProduct } from '../../data/products';
 import { defineTool } from '../types';
 import { productIdSchema } from './schemas';
@@ -199,7 +253,11 @@ export const getProductDetailsTool = defineTool<GetProductDetailsInput>({
   description:
     'Returns the full details of one product: description, features, certifications, price in COP and stock for every size/color variant. Reviews are NOT included; use get_product_reviews.',
   // `required`: the model cannot call it without a productId.
-  inputSchema: { type: 'object', properties: { productId: productIdSchema }, required: ['productId'] },
+  inputSchema: {
+    type: 'object',
+    properties: { productId: productIdSchema },
+    required: ['productId'],
+  },
   annotations: { readOnlyHint: true },
   async execute({ productId }) {
     const product = findProduct(productId);
@@ -220,8 +278,9 @@ export const getProductDetailsTool = defineTool<GetProductDetailsInput>({
 - **Error recuperable**: si el id no existe, no se lanza una excepción. Se devuelve `{ ok: false, code, message }` y el mensaje le dice al modelo qué hacer (`Usa search_products`), así puede corregirse solo.
 - **`toProductDetails()`**: serializa el producto con stock por variante (talla y color). Es la información que necesitará `add_to_cart` en el Acto 3.
 
+**src/webmcp/tools/get-product-reviews.ts**
+
 ```ts
-// src/webmcp/tools/get-product-reviews.ts
 import { findProduct } from '../../data/products';
 import { defineTool } from '../types';
 import { productIdSchema } from './schemas';
@@ -234,7 +293,11 @@ export const getProductReviewsTool = defineTool<GetProductReviewsInput>({
   name: 'get_product_reviews',
   title: 'Leer reseñas',
   description: 'Returns customer reviews for a product (author, rating 1-5, text).',
-  inputSchema: { type: 'object', properties: { productId: productIdSchema }, required: ['productId'] },
+  inputSchema: {
+    type: 'object',
+    properties: { productId: productIdSchema },
+    required: ['productId'],
+  },
   // Act 4 comes back here: review text is written by third parties.
   annotations: { readOnlyHint: true },
   async execute({ productId }) {
@@ -259,8 +322,9 @@ export const getProductReviewsTool = defineTool<GetProductReviewsInput>({
 - **Salida acotada**: el `map` elige solo `author`, `rating`, `date` y `text`, junto con el id y el nombre del producto para que el modelo sepa de qué está hablando.
 - **`readOnlyHint: true`**: leer reseñas no cambia nada. En el Acto 4 veremos que "solo lectura" no significa "contenido confiable".
 
+**src/webmcp/tools/get-cart.ts**
+
 ```ts
-// src/webmcp/tools/get-cart.ts
 import { getCartSummary } from '../../store/selectors';
 import { getState } from '../../store/store';
 import { defineTool } from '../types';
@@ -284,8 +348,9 @@ export const getCartTool = defineTool<Record<string, never>>({
 - **`getState()` al ejecutar**: lee el estado en el momento de la llamada, así que refleja lo que el usuario agregó a mano un segundo antes.
 - **`getCartSummary()`**: el mismo selector que calcula líneas, cupón, descuento y total para la interfaz. El agente no recalcula nada por su cuenta.
 
+**src/webmcp/tools/get-active-filters.ts**
+
 ```ts
-// src/webmcp/tools/get-active-filters.ts
 import { searchProducts } from '../../store/selectors';
 import { getState } from '../../store/store';
 import { defineTool } from '../types';
@@ -310,6 +375,31 @@ export const getActiveFiltersTool = defineTool<Record<string, never>>({
 - **Contexto de pantalla**: devuelve los filtros que el usuario tiene aplicados en la barra, para que el agente entienda frases como "de estos, ¿cuál es más barato?".
 - **`searchProducts(filters).length`**: cuenta los resultados con el mismo selector que pinta el catálogo, así el número coincide con lo que se ve.
 - **Solo lectura**: no cambia los filtros. Cambiarlos será trabajo de `set_filters` en el Acto 3.
+
+**src/webmcp/tools/index.ts**
+
+```ts
+import type { ModelContextTool } from '../types';
+import { getActiveFiltersTool } from './get-active-filters';
+import { getCartTool } from './get-cart';
+import { getProductDetailsTool } from './get-product-details';
+import { getProductReviewsTool } from './get-product-reviews';
+import { getStoreInfoTool } from './get-store-info';
+import { searchProductsTool } from './search-products';
+
+/** Every tool the store exposes. Registered by useWebMcpTools() in <App />. */
+export const storeTools: readonly ModelContextTool[] = [
+  // Act 1: first tool
+  getStoreInfoTool,
+  // Act 2: eyes (read-only)
+  searchProductsTool,
+  getProductDetailsTool,
+  getProductReviewsTool,
+  getCartTool,
+  getActiveFiltersTool,
+  // TODO(acto-3): setFiltersTool, addToCartTool, applyCouponTool, openCartTool, checkoutTool
+];
+```
 
 Compara con `git diff acto-2 acto-3 -- src/`.
 

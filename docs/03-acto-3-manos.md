@@ -234,10 +234,106 @@ npm test
 **Cómo funciona:** `git checkout acto-4 -- <archivo>` copia solo las pruebas del Acto 3 desde el tag de solución, sin tocar tu código; `npm test` las ejecuta con Vitest contra tus herramientas.
 
 <details>
-<summary>Solución: apply_coupon, open_cart y el índice</summary>
+<summary>Solución completa del Acto 3</summary>
+
+Aquí está cada archivo del Acto 3, exactamente como queda en el tag `acto-4`, para que puedas copiarlo archivo por archivo. Las explicaciones están en la sección Tareas.
+
+**src/webmcp/tools/set-filters.ts**
 
 ```ts
-// src/webmcp/tools/apply-coupon.ts
+import type { Category, Certification } from '../../data/types';
+import { setFilters } from '../../store/actions';
+import { searchProducts } from '../../store/selectors';
+import { defineTool } from '../types';
+import { categorySchema, certificationSchema, sizeSchema } from './schemas';
+
+export interface SetFiltersInput {
+  query?: string;
+  category?: Category;
+  certification?: Certification;
+  maxPrice?: number;
+  size?: string;
+  inStockOnly?: boolean;
+  /** Clear every filter before applying the given ones. */
+  reset?: boolean;
+}
+
+export const setFiltersTool = defineTool<SetFiltersInput>({
+  name: 'set_filters',
+  title: 'Aplicar filtros',
+  // "SEES" makes the difference with search_products explicit for the model.
+  description:
+    'Changes the catalog filters the user SEES on screen (same as using the filters bar). ' +
+    'Only the given fields change; pass reset=true to clear all filters first. Returns the active filters and the matching products.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: 'Free text search shown in the search box.' },
+      category: categorySchema,
+      certification: certificationSchema,
+      maxPrice: { type: 'number', description: 'Maximum price in COP.' },
+      size: sizeSchema,
+      inStockOnly: { type: 'boolean' },
+      reset: { type: 'boolean', description: 'Clear all filters before applying these.' },
+    },
+  },
+  // No readOnlyHint: this tool changes state (what is on screen).
+  async execute({ reset, ...changes }) {
+    // The exact same action the <FiltersBar> calls.
+    const result = setFilters(changes, { reset });
+    // Validation error (e.g. INVALID_FILTER): hand it to the model unchanged so it can retry.
+    if (!result.ok) return result;
+    // Return what is now visible, so the model does not need an extra search_products call.
+    const visible = searchProducts(result.filters).map((p) => ({ productId: p.id, name: p.name, priceCop: p.price }));
+    return { ok: true, filters: result.filters, resultCount: result.resultCount, visibleProducts: visible };
+  },
+});
+```
+
+**src/webmcp/tools/add-to-cart.ts**
+
+```ts
+import { addToCart } from '../../store/actions';
+import { defineTool } from '../types';
+import { productIdSchema, sizeSchema } from './schemas';
+
+export interface AddToCartToolInput {
+  productId: string;
+  size: string;
+  color: string;
+  quantity?: number;
+}
+
+// TODO(acto-4): an agent can be tricked into adding absurd quantities.
+//   Export AGENT_MAX_UNITS_PER_PRODUCT = 3 and, before calling addToCart(), reject requests where
+//   quantityInCart(getState().cart, productId) + quantity exceeds it, with
+//   { ok: false, code: 'AGENT_QUANTITY_LIMIT', message }. Guide: docs/04-acto-4-sabotaje.md
+export const addToCartTool = defineTool<AddToCartToolInput>({
+  name: 'add_to_cart',
+  title: 'Agregar al carrito',
+  description:
+    'Adds a product variant (size + color) to the cart. Validates stock per variant. ' +
+    'On error it returns ok=false with a code, a message and the available variants so you can retry with a valid one.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      productId: productIdSchema,
+      size: sizeSchema,
+      color: { type: 'string', description: 'Exact color name from the product variants, e.g. "Negro mate".' },
+      quantity: { type: 'integer', minimum: 1, description: 'Units to add. Defaults to 1.' },
+    },
+    required: ['productId', 'size', 'color'],
+  },
+  async execute({ productId, size, color, quantity = 1 }) {
+    // The exact same action the "Agregar al carrito" button calls.
+    return addToCart({ productId, size, color, quantity });
+  },
+});
+```
+
+**src/webmcp/tools/apply-coupon.ts**
+
+```ts
 import { applyCoupon } from '../../store/actions';
 import { getCartSummary } from '../../store/selectors';
 import { getState } from '../../store/store';
@@ -275,8 +371,9 @@ export const applyCouponTool = defineTool<ApplyCouponInput>({
 - **Error recuperable**: si el cupón no es válido, el `Result` con `code: 'INVALID_COUPON'` vuelve tal cual y el modelo puede explicarle el problema al usuario.
 - **Totales después de aplicar**: lee `getCartSummary(getState())` cuando el cupón ya se aplicó, así el modelo reporta subtotal, descuento y total reales en COP en lugar de calcularlos por su cuenta.
 
+**src/webmcp/tools/open-cart.ts**
+
 ```ts
-// src/webmcp/tools/open-cart.ts
 import { openCart } from '../../store/actions';
 import { getCartSummary } from '../../store/selectors';
 import { getState } from '../../store/store';
@@ -302,8 +399,44 @@ export const openCartTool = defineTool<Record<string, never>>({
 - **No es de solo lectura**: cambia lo que el usuario ve, por eso no lleva `readOnlyHint`.
 - **Salida útil**: además de `ok: true`, devuelve el resumen del carrito para que el modelo pueda cerrar la respuesta ("ya tienes el casco y los guantes, total 1.170.000 COP") sin otra llamada.
 
+**src/webmcp/tools/checkout.ts**
+
 ```ts
-// src/webmcp/tools/index.ts (fragmento)
+import { checkout } from '../../store/actions';
+import { defineTool } from '../types';
+
+// TODO(acto-4): this quick version places the order immediately, no questions asked.
+//   1. annotations: { consequentialHint: true }
+//   2. ask the human with requestConfirmation({...}, signal) from src/ui/confirmation.ts
+//      and return { ok: false, code: 'USER_DECLINED' } if they decline.
+//   Guide: docs/04-acto-4-sabotaje.md
+export const checkoutTool = defineTool<Record<string, never>>({
+  name: 'checkout',
+  title: 'Finalizar compra',
+  description: 'Places the order with the current cart.',
+  inputSchema: { type: 'object', properties: {} },
+  async execute() {
+    return checkout();
+  },
+});
+```
+
+**src/webmcp/tools/index.ts**
+
+```ts
+import type { ModelContextTool } from '../types';
+import { addToCartTool } from './add-to-cart';
+import { applyCouponTool } from './apply-coupon';
+import { checkoutTool } from './checkout';
+import { getActiveFiltersTool } from './get-active-filters';
+import { getCartTool } from './get-cart';
+import { getProductDetailsTool } from './get-product-details';
+import { getProductReviewsTool } from './get-product-reviews';
+import { getStoreInfoTool } from './get-store-info';
+import { openCartTool } from './open-cart';
+import { searchProductsTool } from './search-products';
+import { setFiltersTool } from './set-filters';
+
 /** Every tool the store exposes. Registered by useWebMcpTools() in <App />. */
 export const storeTools: readonly ModelContextTool[] = [
   // Act 1: first tool

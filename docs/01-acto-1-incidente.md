@@ -249,9 +249,64 @@ export const storeTools: readonly ModelContextTool[] = [
 <details>
 <summary>Solución completa del Acto 1</summary>
 
-`src/webmcp/useWebMcpTools.ts` y `src/webmcp/tools/get-store-info.ts`: exactamente los bloques de las secciones 3 y 4.
+Aquí está cada archivo del Acto 1, exactamente como queda en el tag `acto-2`, para que puedas copiarlo archivo por archivo. Las explicaciones están en la sección Tareas.
 
-`src/webmcp/tools/index.ts`:
+**src/webmcp/useWebMcpTools.ts**
+
+```ts
+import { useEffect } from 'react';
+import type { ModelContextTool } from './types';
+
+/**
+ * Registers WebMCP tools while the component is mounted.
+ *
+ * - One AbortController per effect run: aborting its signal unregisters every tool
+ *   (the spec has no unregisterTool()).
+ * - StrictMode-safe: React mounts, cleans up (abort → tools removed) and mounts again,
+ *   so names never collide.
+ */
+export function useWebMcpTools(tools: readonly ModelContextTool[]): void {
+  useEffect(() => {
+    // document.modelContext is the spec entry point; navigator.modelContext is deprecated (Chrome 150).
+    const modelContext = document.modelContext ?? navigator.modelContext;
+    // No WebMCP in this browser: do nothing. The page keeps working for humans.
+    if (!modelContext) return;
+
+    const controller = new AbortController();
+    for (const tool of tools) {
+      modelContext.registerTool(tool, { signal: controller.signal }).catch((error: unknown) => {
+        // Our own cleanup already aborted this run (e.g. StrictMode's first mount): expected, not a bug.
+        if (controller.signal.aborted) return;
+        console.error(`[webmcp] Could not register "${tool.name}"`, error);
+      });
+    }
+    // Unmount (or a new `tools` array): one abort unregisters all of this run's tools.
+    return () => controller.abort();
+    // `tools` must be a stable reference (a module-level array), or every render re-registers.
+  }, [tools]);
+}
+```
+
+**src/webmcp/tools/get-store-info.ts**
+
+```ts
+import { STORE_INFO } from '../../data/products';
+import { defineTool } from '../types';
+
+export const getStoreInfoTool = defineTool<Record<string, never>>({
+  name: 'get_store_info',
+  title: 'Información de la tienda',
+  description:
+    'Returns general information about the Rodada store: opening hours, address, shipping costs and delivery times, free-shipping threshold, payment methods, returns policy and contact.',
+  inputSchema: { type: 'object', properties: {} },
+  annotations: { readOnlyHint: true },
+  async execute() {
+    return STORE_INFO;
+  },
+});
+```
+
+**src/webmcp/tools/index.ts**
 
 ```ts
 import type { ModelContextTool } from '../types';
