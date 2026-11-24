@@ -110,7 +110,7 @@ if (alreadyInCart + quantity > AGENT_MAX_UNITS_PER_PRODUCT) {
 - **Error recuperable `AGENT_QUANTITY_LIMIT`**: el mensaje explica la regla y qué puede hacer el usuario, así el modelo puede contárselo en vez de reintentar a ciegas.
 - **Es la capa 2 y no depende del modelo**: aunque la reseña maliciosa convenza al agente de pedir 10, la página responde que no.
 
-Es **acumulativo** por producto: el agente no puede evadirlo con tres llamadas de 4 unidades. Un humano sí puede comprar más desde la UI.
+Es **acumulativo** por producto: el agente no puede evadirlo repartiendo la compra en varias llamadas (por ejemplo, cuatro llamadas de 1 unidad). Un humano sí puede comprar más desde la UI.
 
 ### 4.3 Protege el checkout · `src/webmcp/tools/checkout.ts`
 
