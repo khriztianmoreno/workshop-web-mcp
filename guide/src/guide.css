@@ -465,12 +465,18 @@ a {
 .g-sec li + li {
   margin-top: 4px;
 }
+/* Task items: keep the text as normal inline flow (a flex row would turn every
+   text run and <code> into its own column) and hang the checkbox on the left. */
 .g-sec li:has(> .g-check) {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  position: relative;
   list-style: none;
   margin-left: -24px;
+  padding-left: 38px;
+}
+.g-sec li > .g-check {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .g-sec :not(pre) > code {
