@@ -934,6 +934,88 @@ pre {
   border-bottom-left-radius: 4px;
 }
 
+.msg--markdown {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.msg--markdown > :first-child {
+  margin-top: 0;
+}
+
+.msg--markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.msg--markdown p,
+.msg--markdown ul,
+.msg--markdown ol,
+.msg--markdown pre,
+.msg--markdown blockquote {
+  margin: 0 0 0.5em;
+}
+
+.msg--markdown ul,
+.msg--markdown ol {
+  padding-left: 1.25em;
+}
+
+.msg--markdown li + li {
+  margin-top: 0.15em;
+}
+
+.msg--markdown h1,
+.msg--markdown h2,
+.msg--markdown h3,
+.msg--markdown h4,
+.msg--markdown h5,
+.msg--markdown h6 {
+  margin: 0.6em 0 0.3em;
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.msg--markdown h1,
+.msg--markdown h2 {
+  font-size: 1.05em;
+}
+
+.msg--markdown hr {
+  margin: 0.6em 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.msg--markdown code {
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  background: var(--surface);
+  font-size: 0.9em;
+}
+
+.msg--markdown pre {
+  padding: 8px;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.msg--markdown pre code {
+  padding: 0;
+  background: none;
+}
+
+.msg--markdown blockquote {
+  padding-left: 0.75em;
+  border-left: 3px solid var(--line);
+  color: var(--ink-2);
+}
+
+.msg--markdown a {
+  color: var(--agent);
+}
+
 .msg--error {
   align-self: stretch;
   background: #fbe9e9;

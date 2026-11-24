@@ -6,6 +6,7 @@ import { normalizeTool } from '../webmcp/annotations';
 import type { AnnotatedTool } from '../webmcp/types';
 import { runAgentTurn, type ToolCallEvent } from './agent-loop';
 import { getHealth, postChat } from './api';
+import { MessageBubble } from './MessageBubble';
 
 type ChatItem =
   | { kind: 'user'; id: string; text: string }
@@ -243,17 +244,8 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
         {items.map((item) => {
           switch (item.kind) {
             case 'user':
-              return (
-                <p key={item.id} className="msg msg--user">
-                  {item.text}
-                </p>
-              );
             case 'assistant':
-              return (
-                <p key={item.id} className="msg msg--assistant">
-                  {item.text}
-                </p>
-              );
+              return <MessageBubble key={item.id} role={item.kind} text={item.text} />;
             case 'error':
               return (
                 <p key={item.id} className="msg msg--error" role="alert">
