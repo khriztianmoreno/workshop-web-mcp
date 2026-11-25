@@ -99,6 +99,8 @@ Abre [http://localhost:5173](http://localhost:5173). Debes ver la tienda Rodada 
 
 Sin la flag no pasa nada: el taller usa un polyfill con la misma forma de la especificación.
 
+Si algo falla con la flag activada (por ejemplo, el chat responde `400 Formato inválido` o una herramienta dice `parameter 1 is not of type 'Tool'`), abre `http://localhost:5173/?webmcp=polyfill`: la píldora dice "WebMCP polyfill (forzado)" y el taller funciona igual. Después actualiza los tags como indica la sección de solución de problemas del README.
+
 ## 7. Lectura sugerida (10 minutos)
 
 - Qué es una herramienta para un modelo de lenguaje (function calling).

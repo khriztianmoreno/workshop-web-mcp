@@ -324,6 +324,8 @@ Tabla WebMCP vs. MCP de servidor, checklist de producción (origin trial, `expos
 | `Error: TODO(acto-N)` en una tarjeta | Herramienta registrada sin implementar | Completar `execute` o quitarla del índice |
 | `document.modelContext` undefined | Acceso por IP con http | Usar `localhost` |
 | Con WebMCP nativo falta "consecuente"/"no confiable" o sale `reading 'consequentialHint'` | El `getTools()` nativo de Chrome no devuelve `annotations` | Ya está cubierto: el adaptador de `src/webmcp/polyfill.ts` las recuerda al registrar. Para comparar, abre `?webmcp=polyfill` (la insignia dice "WebMCP polyfill (forzado)") |
+| Con la flag de WebMCP activada, el chat responde `400` "Formato inválido: se esperaba { messages, tools }" | Tag anterior a la corrección: el adaptador copiaba con *spread* los objetos `Tool` de Chrome (sus campos son *getters* del prototipo) y las herramientas viajaban sin `name` ni `description` | Actualizar al tag corregido: `git fetch origin --tags --force` y recrear la rama desde el tag (`git switch -c mi-acto-N-v2 acto-N`). Mientras tanto, abrir `?webmcp=polyfill` |
+| Con la flag de WebMCP activada, la herramienta falla con `parameter 1 is not of type 'Tool'` | Tag anterior a la corrección: el `executeTool()` nativo de Chrome solo acepta su propio objeto `Tool`, no una copia | Misma solución: actualizar al tag corregido; mientras tanto, `?webmcp=polyfill` |
 | El agente no reconoce el prompt (modo simulado) | Texto distinto al guion | Usar los botones de sugerencias |
 | Gemini elige otro producto o color | No determinismo | Explicarlo como parte de la lección; usar modo simulado para la demo |
 | Puerto 5173 ocupado | Otra instancia de Vite | Cerrar la otra o usar el puerto que proponga Vite |

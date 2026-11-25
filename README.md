@@ -194,6 +194,7 @@ Clave dedicada con tope de gasto, variables, Coolify, `TRUST_PROXY` y pruebas co
 | `npm ci` falla con `EBADENGINE` | Node < 22.12 | Instala Node 22 LTS o 24 LTS |
 | `document.modelContext` es `undefined` | No es contexto seguro (IP de red con `http`) | Usa `http://localhost:5173` |
 | "A tool named … is already registered" | Registraste sin `signal` o sin abortar en la limpieza | Revisa `useWebMcpTools` (Acto 1) |
+| Con la flag de WebMCP activada: `400 Formato inválido` en el chat o `parameter 1 is not of type 'Tool'` | Tags anteriores a la corrección del adaptador nativo | Actualiza los tags (bloque de abajo); mientras tanto abre `http://localhost:5173/?webmcp=polyfill` |
 
 Si el instructor actualizó el repositorio con *force-push*, sincroniza sin perder tu trabajo (tu avance vive en tus ramas `mi-acto-N`, no en `main`):
 
