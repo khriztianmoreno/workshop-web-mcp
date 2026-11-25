@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { toDeclaration } from '../agent/agent-loop';
+import { normalizeTool } from './annotations';
 import { FakeNativeModelContext } from './fake-native';
 import { installWebMcp, isPolyfillForced, NativeWrappedModelContext, PolyfillModelContext, validateInput } from './polyfill';
 import type { ModelContextTool, ToolEvent } from './types';
@@ -188,11 +190,61 @@ describe('native WebMCP whose getTools() drops annotations (Chrome)', () => {
     return { native, ...installed };
   }
 
-  it('the fake mirrors Chrome: no annotations in getTools()', async () => {
+  it('the fake mirrors Chrome: platform Tool objects without annotations in getTools()', async () => {
     const native = new FakeNativeModelContext();
     await native.registerTool(echoTool('buy', { annotations: { consequentialHint: true } }));
     const [tool] = await native.getTools();
-    expect(Object.keys(tool).sort()).toEqual(['description', 'inputSchema', 'name', 'origin', 'title', 'window']);
+    // Fields are prototype getters, so a spread copies nothing.
+    expect(Object.keys(tool)).toEqual([]);
+    expect({ ...tool }).toEqual({});
+    expect(tool).toMatchObject({ name: 'buy', title: '', description: 'Echoes its input.', origin: location.origin });
+    expect(tool.annotations).toBeUndefined();
+  });
+
+  it('the fake mirrors Chrome: executeTool() only accepts the Tool objects getTools() handed out', async () => {
+    const native = new FakeNativeModelContext();
+    await native.registerTool(echoTool());
+    const [tool] = await native.getTools();
+    const notATool = "Failed to execute 'executeTool' on 'ModelContext': parameter 1 is not of type 'Tool'.";
+    const copy = { name: tool.name, description: tool.description, inputSchema: tool.inputSchema, origin: tool.origin };
+
+    await expect(native.executeTool(copy, { value: 'x' })).rejects.toThrow(notATool);
+    await expect(native.executeTool('echo', { value: 'x' })).rejects.toThrow(notATool);
+    expect(await native.executeTool(tool, { value: 'x' })).toBe('{"echoed":"x"}');
+    expect(native.executed).toEqual(['echo']);
+  });
+
+  it('keeps name and description when native getTools() returns platform objects (prototype getters)', async () => {
+    const { native, modelContext } = installFakeNative();
+    await modelContext.registerTool(echoTool('buy', { annotations: { consequentialHint: true } }));
+    await modelContext.registerTool(echoTool('plain'));
+    const { inputSchema } = echoTool();
+
+    const tools = await modelContext.getTools();
+    expect(tools.map((tool) => tool.name)).toEqual(['buy', 'plain']);
+    expect(tools[0].annotations).toMatchObject({ consequentialHint: true });
+
+    for (const tool of tools) {
+      expect(tool.description).toBe('Echoes its input.');
+      expect(tool.inputSchema).toEqual(inputSchema);
+      // Exactly what travels to the proxy in POST /api/chat.
+      const wire = JSON.parse(JSON.stringify(toDeclaration(normalizeTool(tool))));
+      expect(wire).toEqual({ name: tool.name, description: 'Echoes its input.', parameters: inputSchema });
+      // agent-loop executes the normalized copy, never the browser's own object.
+      expect(await modelContext.executeTool(normalizeTool(tool), { value: tool.name })).toBe(`{"echoed":"${tool.name}"}`);
+    }
+    expect(native.executed).toEqual(['buy', 'plain']);
+  });
+
+  it('lets the browser reject a tool that is no longer registered', async () => {
+    const { native, modelContext } = installFakeNative();
+    const controller = new AbortController();
+    await modelContext.registerTool(echoTool(), { signal: controller.signal });
+    const [tool] = await modelContext.getTools();
+    controller.abort();
+
+    await expect(modelContext.executeTool(tool, { value: 'x' })).rejects.toThrow(/not of type 'Tool'/);
+    expect(native.executed).toEqual([]);
   });
 
   it('records annotations at registration and merges them back into getTools()', async () => {

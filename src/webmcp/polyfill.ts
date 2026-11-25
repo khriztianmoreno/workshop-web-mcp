@@ -241,7 +241,12 @@ export class NativeWrappedModelContext extends PolyfillModelContext {
  * registerTool() are dropped, so the in-page agent would lose its consequentialHint
  * confirmation and untrustedContentHint fencing. This adapter keeps a side registry of
  * annotations by tool name (forgotten when the registration signal aborts) and merges it
- * back into getTools(). Everything else goes straight to the browser.
+ * back into getTools().
+ *
+ * Chrome also returns platform `Tool` objects (WebIDL, fields are prototype getters) and its
+ * executeTool() only accepts those exact objects. getTools() therefore hands out plain copies,
+ * and executeTool() swaps a copy back for the browser's original. Everything else goes straight
+ * to the browser.
  */
 interface AnnotationRecord {
   annotations: ToolAnnotations;
@@ -285,14 +290,36 @@ export class NativeAnnotatedModelContext implements ModelContext {
   async getTools(options?: GetToolsOptions): Promise<RegisteredTool[]> {
     const tools = await this.#native.getTools(options);
     return tools.map((tool) => {
+      // Chrome returns platform `Tool` objects whose fields are prototype getters, so `{ ...tool }`
+      // would copy nothing. Read each field explicitly into a plain object: from here on, spreads,
+      // JSON.stringify and structuredClone downstream (normalizeTool, toDeclaration, the panel) are safe.
+      const plain: RegisteredTool = {
+        name: tool.name,
+        title: tool.title,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+        outputSchema: tool.outputSchema,
+        annotations: tool.annotations,
+        origin: tool.origin,
+        window: tool.window,
+      };
       const record = this.#annotations.get(tool.name);
       // Annotations reported by the browser itself (if a future build returns them) win.
-      return record ? { ...tool, annotations: { ...record.annotations, ...tool.annotations } } : tool;
+      return record ? { ...plain, annotations: { ...record.annotations, ...tool.annotations } } : plain;
     });
   }
 
-  executeTool(tool: RegisteredTool | string, input?: object, options?: ExecuteToolOptions): Promise<string> {
-    return this.#native.executeTool(tool, input, options);
+  async executeTool(tool: RegisteredTool | string, input?: object, options?: ExecuteToolOptions): Promise<string> {
+    if (typeof tool === 'string') return this.#native.executeTool(tool, input, options);
+    // getTools() hands out plain copies (see above), but Chrome's executeTool() only accepts its own
+    // platform `Tool` object, not a dictionary with the same shape. Look the original up by name (and
+    // origin, when known) right before executing. If it is gone (unregistered in the meantime), pass
+    // the copy through and let the browser raise its own error.
+    const originals = await this.#native.getTools();
+    const original =
+      originals.find((candidate) => candidate.name === tool.name && (!tool.origin || candidate.origin === tool.origin)) ??
+      originals.find((candidate) => candidate.name === tool.name);
+    return this.#native.executeTool(original ?? tool, input, options);
   }
 
   addEventListener(...args: Parameters<EventTarget['addEventListener']>): void {

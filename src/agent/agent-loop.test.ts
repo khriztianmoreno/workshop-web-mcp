@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ChatMessage, ChatRequest, ChatResponse } from '../../shared/agent-protocol';
 import { FakeNativeModelContext } from '../webmcp/fake-native';
-import { installWebMcp, PolyfillModelContext } from '../webmcp/polyfill';
+import { installWebMcp, NativeAnnotatedModelContext, PolyfillModelContext } from '../webmcp/polyfill';
 import type { ModelContext } from '../webmcp/types';
 import { runAgentTurn, type AgentLoopOptions } from './agent-loop';
 
@@ -80,13 +80,17 @@ describe('runAgentTurn on native WebMCP (getTools() without annotations)', () =>
     return installWebMcp({ forcePolyfill: false }).modelContext;
   }
 
-  it('does not crash on a raw native context and treats missing annotations as all false', async () => {
-    const { mc, buy } = await setup(new FakeNativeModelContext() as unknown as ModelContext);
+  it('does not crash on native tools registered outside the adapter and treats missing annotations as all false', async () => {
+    // Registered straight on the browser context: the adapter never saw the annotations.
+    const native = new FakeNativeModelContext();
+    const { buy } = await setup(native as unknown as ModelContext);
+    const mc = new NativeAnnotatedModelContext(native as unknown as ModelContext);
     const { sendChat, requests } = scripted({ functionCalls: [{ id: '1', name: 'buy', args: {} }] }, { text: 'ok', functionCalls: [] });
     const confirmTool = vi.fn(async () => true);
 
     await runAgentTurn({ modelContext: mc, history: [{ role: 'user', text: 'compra' }], sendChat, confirmTool });
 
+    expect(confirmTool).not.toHaveBeenCalled();
     expect(buy).toHaveBeenCalledOnce();
     expect(JSON.stringify(requests[1].messages.at(-1))).toContain('"ok":true');
   });

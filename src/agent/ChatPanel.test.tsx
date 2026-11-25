@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FakeNativeModelContext } from '../webmcp/fake-native';
-import { installWebMcp } from '../webmcp/polyfill';
+import { installWebMcp, NativeAnnotatedModelContext } from '../webmcp/polyfill';
 import type { ModelContext, ModelContextTool } from '../webmcp/types';
 import { ChatPanel } from './ChatPanel';
 
@@ -57,9 +57,13 @@ describe('<ChatPanel /> tool list', () => {
     await act(async () => root.unmount());
   });
 
-  it('renders a raw native context (no annotations at all) without crashing', async () => {
+  it('renders native tools registered outside the adapter (no annotations at all) without crashing', async () => {
+    // Registered straight on the browser context: the adapter never saw the annotations.
     const native = new FakeNativeModelContext();
-    Object.defineProperty(document, 'modelContext', { value: native, configurable: true });
+    Object.defineProperty(document, 'modelContext', {
+      value: new NativeAnnotatedModelContext(native as unknown as ModelContext),
+      configurable: true,
+    });
     const { container, root } = await renderPanelWith(native as unknown as ModelContext);
 
     expect(Object.keys(hintsByTool(container))).toEqual(['get_cart', 'get_product_reviews', 'checkout', 'no_hints']);
