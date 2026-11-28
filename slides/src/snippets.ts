@@ -28,9 +28,16 @@ export const SETUP = `
 node -v                          # 22.12 o superior
 git switch -c mi-taller acto-1   # empieza desde el Acto 1
 npm ci
-cp env.example .env              # opcional: agrega GEMINI_API_KEY
+cp env.example .env              # déjalo vacío: Acto 1 en Modo simulado
 npm run check                    # verifica tu entorno
 npm run dev                      # abre http://localhost:5173
+`;
+
+export const CLONE = `
+git clone https://github.com/khriztianmoreno/workshop-web-mcp
+cd workshop-web-mcp
+git switch -c mi-taller acto-1
+npm ci
 `;
 
 export const CATCH_UP = `

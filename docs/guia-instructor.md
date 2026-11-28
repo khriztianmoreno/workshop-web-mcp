@@ -38,7 +38,7 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 
 - [ ] Proyector: zoom del navegador al 125 %, editor con fuente 18+, terminal con fuente grande.
 - [ ] Dos ventanas: la tienda (izquierda) y el editor (derecha). DevTools cerradas hasta el Acto 1.
-- [ ] Escribir en la pizarra o en una diapositiva: URL de la guía, URL del repo, URL del proxy con el marcador `<token>` en lugar del token real, Wi-Fi (la slide de verificación ya las proyecta desde `talk.ts`, también con `<token>`). El token real se comparte solo por el chat del taller, nunca en el proyector, y se rota al terminar el evento.
+- [ ] Escribir en la pizarra o en una diapositiva: URL de la guía, URL del repo, URL del proxy con el marcador `<token>` en lugar del token real, Wi-Fi (la slide de verificación ya las proyecta desde `talk.ts`, también con `<token>`). La URL real con token se proyecta **solo** en la slide `proxy` (Acto 2), que la lee de `VITE_ROOM_PROXY_URL` en tu `.env` local; nunca la escribas en `talk.ts` ni en otro archivo versionado. Pégala también en el chat del taller y rota el token al terminar el evento.
 - [ ] `npm run dev` corriendo en `acto-1`; insignia del panel visible.
 - [ ] Slides abiertas desde la copia en `main` con `npm run speaker` (puerto 5180), mientras la tienda corre con `npm run dev` desde el otro clon: presentación en el proyector y vista del orador en tu pantalla.
 
@@ -168,7 +168,7 @@ Genera el token con `openssl rand -hex 16` (32 caracteres hexadecimales; el mín
 
 Cuidados con el token:
 
-- **Viaja en la URL** (`/t/<token>`), así que puede quedar en historiales, capturas y logs. **Nunca lo proyectes** ni lo pongas en las slides: compártelo por el chat del taller.
+- **Viaja en la URL** (`/t/<token>`), así que puede quedar en historiales, capturas y logs. No lo escribas en archivos versionados. Para proyectarlo, la slide `proxy` lo lee de `VITE_ROOM_PROXY_URL` en tu `.env` local (Git lo ignora); compártelo también por el chat del taller. Como queda a la vista de la sala, **rótalo al terminar**.
 - Guárdalo en el **almacén de secretos** del hosting, no en el repositorio.
 - **Rótalo al terminar el evento** (o apaga el proxy), igual que la clave de Gemini.
 - Tras `AUTH_FAILURES_PER_MINUTE` tokens inválidos **distintos** en un minuto (30 por defecto), esa IP recibe 429 durante ese minuto, incluso con el token correcto. Se cuentan valores distintos, no intentos: si varias personas de la sala repiten el mismo token mal copiado (o ninguno), solo reciben 401 y no bloquean a los demás. El umbral solo se alcanza con muchos tokens equivocados *diferentes* en el mismo minuto; aun así, pide que copien la URL completa.

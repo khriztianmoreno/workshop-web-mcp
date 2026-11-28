@@ -3,6 +3,7 @@ import { DEMO_PROMPT_LABELS } from '../../shared/demo-prompts';
 import photoPortrait from './assets/image2.jpg';
 import photoStage from './assets/image1.jpg';
 import siteLogo from './assets/logo.png';
+import repoQr from './assets/repo-qr.svg';
 import { Code } from './code';
 import { Icon, type IconName } from './icons';
 import {
@@ -27,7 +28,7 @@ import {
   Tech,
   type Tone,
 } from './primitives';
-import { CATCH_UP, REGISTER_TOOL, SETUP } from './snippets';
+import { CATCH_UP, CLONE, REGISTER_TOOL, SETUP } from './snippets';
 import { TALK } from './talk';
 
 /*
@@ -53,6 +54,7 @@ const PROBLEMA: Section = { name: 'El problema' };
 const WEBMCP: Section = { name: 'La solución', detail: 'WebMCP' };
 const COMO: Section = { name: 'WebMCP', detail: 'Cómo funciona' };
 const TALLER: Section = { name: 'El taller' };
+const ACTO2: Section = { name: 'Acto 2', detail: 'Darle ojos' };
 const CIERRE: Section = { name: 'Acto 5', detail: 'Cierre' };
 
 /** The Act 1 incident, word for word what the simulated agent answers at acto-1 with an empty .env. */
@@ -572,6 +574,26 @@ function ArchBox({ icon, title, path, fill, children }: { icon: IconName; title:
   );
 }
 
+/** Bridge from theory to practice: scan, clone, start at acto-1. */
+function Clona() {
+  return (
+    <Content tone="green" label="De la teoría a la práctica" title="Escanea, clona y ven con nosotros">
+      <div className="flex flex-1 items-center gap-16">
+        <div className="flex shrink-0 flex-col items-center gap-4 rounded-[32px] border-[3px] border-df-ink bg-white p-8">
+          <img src={repoQr} alt={`QR al repositorio ${TALK.repoUrl}`} className="h-[400px] w-[400px]" />
+          <p className="font-df-code text-[22px] text-df-soft">{TALK.repoUrl}</p>
+        </div>
+        <div className="flex flex-1 flex-col gap-6">
+          <Code code={CLONE} lang="sh" file="Terminal" size="lg" />
+          <p className="text-[30px] leading-snug">
+            Deja el <Tech>.env</Tech> vacío: el Acto 1 empieza en <b>Modo simulado</b>.
+          </p>
+        </div>
+      </div>
+    </Content>
+  );
+}
+
 function Arquitectura() {
   return (
     <Content tone="blue" label="Cómo está armado este repo" title="Todo corre en tu navegador, menos la clave">
@@ -707,6 +729,64 @@ function Vamos() {
         </div>
       </Region>
     </Frame>
+  );
+}
+
+// ─── Act 2: connect the real model ─────────────────────────────────────────
+
+/**
+ * Room proxy URL with the real token. Read from VITE_ROOM_PROXY_URL in the local
+ * .env (gitignored) so the token is projected in the room but never committed.
+ * Without it the slide shows the public placeholder with <token>.
+ */
+const ROOM_PROXY_URL: string = import.meta.env.VITE_ROOM_PROXY_URL || `https://${TALK.proxyUrl}`;
+
+/** The token split in blocks of 4 with alternating colors: easier to read off the projector. */
+function TokenBlocks({ token }: { token: string }) {
+  const blocks = token.match(/.{1,4}/g) ?? [token];
+  return (
+    <>
+      {blocks.map((b, i) => (
+        <span key={i} className={i % 2 === 0 ? 'text-df-halftone-yellow' : 'text-df-halftone-green'}>
+          {b}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function Proxy() {
+  const cut = ROOM_PROXY_URL.indexOf('/t/');
+  const host = cut >= 0 ? ROOM_PROXY_URL.slice(0, cut) : ROOM_PROXY_URL;
+  const token = cut >= 0 ? ROOM_PROXY_URL.slice(cut + 3) : '';
+  const steps: { tone: Tone; text: ReactNode }[] = [
+    { tone: 'blue', text: <>Abre <Tech>.env</Tech> y quita <Tech>AGENT_MODE=mock</Tech> si lo tienes</> },
+    { tone: 'green', text: <>Pega la línea, <b>todo junto y sin espacios</b></> },
+    { tone: 'yellow', text: <><Tech>Ctrl+C</Tech> y otra vez <Tech>npm run dev</Tech>: el panel dice “Gemini”</> },
+  ];
+  return (
+    <Content tone="blue" label="Acto 2 · Conecta el modelo real" title="Pega esta línea en tu .env">
+      <div className="flex flex-col gap-3 rounded-[28px] border-[3px] border-df-ink bg-df-ink px-12 py-8 font-df-code text-df-offwhite">
+        <p className="text-[34px] text-df-halftone-blue">AGENT_BASE_URL=</p>
+        <p className="text-[50px] leading-tight">{host}</p>
+        {token && (
+          <p className="text-[64px] font-semibold leading-tight tracking-wide">
+            /t/
+            <TokenBlocks token={token} />
+          </p>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-6">
+        {steps.map((st, i) => (
+          <Step key={i} n={String(i + 1)} tone={st.tone}>
+            {st.text}
+          </Step>
+        ))}
+      </div>
+      <p className="mt-auto text-[28px] text-df-soft">
+        También está en el chat del taller. ¿Tienes tu propia clave? Usa <Tech>GEMINI_API_KEY</Tech>. ¿Sin red? Sigue en Modo simulado.
+      </p>
+    </Content>
   );
 }
 
@@ -865,10 +945,13 @@ const DECK: DeckSlide[] = [
   { id: 'seguridad', Component: Seguridad, title: 'Avance: inyección de prompts', section: COMO },
   { id: 'vs-mcp', Component: VsMcp, title: 'WebMCP vs. MCP de servidor', section: COMO },
   // The workshop
+  { id: 'clona', Component: Clona, title: 'Clona el repo (QR)', section: TALLER },
   { id: 'arquitectura', Component: Arquitectura, title: 'Arquitectura del taller', section: TALLER },
   { id: 'mision', Component: Mision, title: 'La misión y las reglas', section: TALLER },
   { id: 'setup', Component: Setup, title: 'Verificación del entorno', section: TALLER },
   { id: 'vamos', Component: Vamos, title: '¡A rodar! Acto 1' },
+  // Act 2
+  { id: 'proxy', Component: Proxy, title: 'Acto 2: conecta el modelo real', section: ACTO2 },
   // Closing
   { id: 'gracias', Component: Gracias, title: '¡Gracias!' },
   { id: 'pregunta', Component: Pregunta, title: 'Pregunta final', section: CIERRE },

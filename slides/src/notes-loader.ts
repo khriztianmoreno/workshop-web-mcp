@@ -10,10 +10,12 @@ import registro from '../notes/registro.md?raw';
 import ladoAgente from '../notes/lado-agente.md?raw';
 import seguridad from '../notes/seguridad.md?raw';
 import vsMcp from '../notes/vs-mcp.md?raw';
+import clona from '../notes/clona.md?raw';
 import arquitectura from '../notes/arquitectura.md?raw';
 import mision from '../notes/mision.md?raw';
 import setup from '../notes/setup.md?raw';
 import vamos from '../notes/vamos.md?raw';
+import proxy from '../notes/proxy.md?raw';
 import gracias from '../notes/gracias.md?raw';
 import pregunta from '../notes/pregunta.md?raw';
 import respuesta from '../notes/respuesta.md?raw';
@@ -30,10 +32,12 @@ export const NOTES: Record<string, string> = {
   'lado-agente': ladoAgente,
   seguridad,
   'vs-mcp': vsMcp,
+  clona,
   arquitectura,
   mision,
   setup,
   vamos,
+  proxy,
   gracias,
   pregunta,
   respuesta,
