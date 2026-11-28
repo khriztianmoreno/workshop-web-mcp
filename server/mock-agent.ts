@@ -11,7 +11,7 @@ import {
  *
  * It recognizes the workshop demo prompts and plans function calls ONLY with the tools the
  * page actually registered, so the workshop narrative still works without wifi or an API key:
- *  - no tools        → it guesses (the "mute chatbot" of Act 1)
+ *  - no tools        → it honestly says it cannot see the store (the useless assistant of Act 1)
  *  - read tools      → it answers with real data (Act 2)
  *  - write tools     → it drives the UI (Act 3)
  *  - injection       → it OBEYS instructions in reviews unless the tool output is marked
@@ -143,8 +143,8 @@ function pickColor(details: ProductDetails | undefined, size: string): string | 
 
 function storeInfo(turn: Turn): ChatResponse {
   if (!hasTools(turn, 'get_store_info')) {
-    // Plausible but WRONG on purpose: the model has no way to check.
-    return say('Nuestro horario es de lunes a domingo de 8:00 a 20:00 y el envío es gratis a todo el país.');
+    // Honest but useless: it cannot check, so it hands the work back to the customer.
+    return say('No tengo acceso a la información de la tienda en este momento. Te sugiero consultar la página web o comunicarte con nuestros asesores.');
   }
   const info = payload(findStep(turn, 'get_store_info'));
   if (!info) return call(['get_store_info', {}]);
@@ -179,9 +179,9 @@ export function parseCriteria(userText: string): Record<string, unknown> {
 
 function catalog(turn: Turn): ChatResponse {
   if (!hasTools(turn, 'search_products')) {
-    // The "mute chatbot": confident, specific and invented.
+    // Honest but useless, like Gemini at Act 1: no catalog access, so the customer is sent elsewhere.
     return say(
-      '¡Claro! Tenemos el casco integral Vulcano Pro (ECE 22.06) a 890.000 COP y el modular Titán X a 1.090.000 COP, ambos disponibles en talla M.',
+      'En este momento no tengo acceso al catálogo ni al inventario de la tienda, así que no puedo consultar certificaciones, tallas ni precios. Te sugiero revisar la página web o comunicarte con nuestros asesores.',
     );
   }
   const result = payload(findStep(turn, 'search_products'));
@@ -200,8 +200,8 @@ function boss(turn: Turn): ChatResponse {
   const required = ['search_products', 'add_to_cart', 'apply_coupon', 'open_cart'];
   if (!hasTools(turn, ...required)) {
     if (!turn.tools.has('search_products')) {
-      // Without hands, a chatbot just claims it did it. The UI proves it did not.
-      return say('¡Listo! Agregué el casco y los guantes en talla M, apliqué el cupón BIENVENIDA10 y abrí tu carrito.');
+      // Act 1 incident, word for word as on the "incidente" slide: honest, and it hands the work back.
+      return say('No puedo agregar productos ni aplicar cupones. Hazlo en la web.');
     }
     const missing = required.filter((name) => !turn.tools.has(name));
     return say(`Puedo buscar productos, pero esta página no me da herramientas para: ${missing.join(', ')}. No puedo modificar tu carrito.`);
@@ -349,7 +349,7 @@ export function mockAgent(request: ChatRequest): ChatResponse {
     default:
       return say(
         turn.tools.size === 0
-          ? 'Soy el asistente de Rodada. Ahora mismo no tengo herramientas, así que solo puedo responder de memoria.'
+          ? 'Soy el asistente de Rodada. Ahora mismo no tengo herramientas, así que no puedo ver ni usar esta página.'
           : `Modo simulado: solo reconozco los prompts del taller (usa los botones de sugerencias). Tengo ${turn.tools.size} herramientas disponibles.`,
       );
   }
