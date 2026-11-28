@@ -14,6 +14,9 @@ import arquitectura from '../notes/arquitectura.md?raw';
 import mision from '../notes/mision.md?raw';
 import setup from '../notes/setup.md?raw';
 import vamos from '../notes/vamos.md?raw';
+import gracias from '../notes/gracias.md?raw';
+import pregunta from '../notes/pregunta.md?raw';
+import respuesta from '../notes/respuesta.md?raw';
 
 export const NOTES: Record<string, string> = {
   cover,
@@ -31,4 +34,7 @@ export const NOTES: Record<string, string> = {
   mision,
   setup,
   vamos,
+  gracias,
+  pregunta,
+  respuesta,
 };

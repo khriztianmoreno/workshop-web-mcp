@@ -1,5 +1,5 @@
 import { useEffect, useState, type FC, type ReactNode } from 'react';
-import { DEMO_PROMPTS, DEMO_PROMPT_LABELS } from '../../shared/demo-prompts';
+import { DEMO_PROMPT_LABELS } from '../../shared/demo-prompts';
 import photoPortrait from './assets/image2.jpg';
 import photoStage from './assets/image1.jpg';
 import siteLogo from './assets/logo.png';
@@ -53,6 +53,11 @@ const PROBLEMA: Section = { name: 'El problema' };
 const WEBMCP: Section = { name: 'La solución', detail: 'WebMCP' };
 const COMO: Section = { name: 'WebMCP', detail: 'Cómo funciona' };
 const TALLER: Section = { name: 'El taller' };
+const CIERRE: Section = { name: 'Acto 5', detail: 'Cierre' };
+
+/** The Act 1 incident, word for word what the simulated agent answers at acto-1 with an empty .env. */
+const INCIDENT_PROMPT = 'Agrega un casco ECE y guantes talla M, y aplica el cupón.';
+const INCIDENT_REPLY = 'No puedo agregar productos ni aplicar cupones. Hazlo en la web.';
 
 // ─── Shared pieces ─────────────────────────────────────────────────────────
 
@@ -235,8 +240,8 @@ function Incidente() {
     <Content tone="red" label="Lanzamos el asistente de IA · Primer ticket" title="Le pidió que lo hiciera. Le respondió: hazlo tú.">
       <div className="flex flex-1 items-center gap-16">
         <div className="flex flex-1 flex-col gap-8">
-          <Bubble from="user">Agrega un casco ECE y guantes talla M, y aplica el cupón.</Bubble>
-          <Bubble from="bot">No puedo agregar productos ni aplicar cupones. Hazlo en la web.</Bubble>
+          <Bubble from="user">{INCIDENT_PROMPT}</Bubble>
+          <Bubble from="bot">{INCIDENT_REPLY}</Bubble>
         </div>
         <div className="flex w-[560px] flex-col gap-5">
           {blind.map((b) => (
@@ -687,8 +692,8 @@ function Vamos() {
         </div>
         <div className="flex w-[1200px] flex-col gap-5">
           <Step n="1" tone="red">
-            Reproduce el incidente con <b>“{DEMO_PROMPT_LABELS.boss}”</b> (sí, el del Acto 3):
-            <p className="mt-2 rounded-[20px] border-[3px] border-df-ink bg-white px-6 py-3 text-[26px] italic">“{DEMO_PROMPTS.boss}”</p>
+            Reproduce el incidente en <b>Modo simulado</b> (<Tech>.env</Tech> vacío):
+            <p className="mt-2 rounded-[20px] border-[3px] border-df-ink bg-white px-6 py-3 text-[26px] italic">“{INCIDENT_PROMPT}”</p>
           </Step>
           <Step n="2" tone="blue">
             Escribe el hook <Tech>useWebMcpTools</Tech> con <Tech>AbortSignal</Tech>
@@ -702,6 +707,135 @@ function Vamos() {
         </div>
       </Region>
     </Frame>
+  );
+}
+
+// ─── Closing ───────────────────────────────────────────────────────────────
+
+function Gracias() {
+  const links: { icon: IconName; value: string }[] = [
+    { icon: 'fork_right', value: TALK.repoUrl },
+    { icon: 'menu_book', value: TALK.guideUrl },
+    { icon: 'public', value: TALK.site },
+  ];
+  return (
+    <Frame bg="title">
+      {/* Upper-right panel: x 672–1844, y 79–348. */}
+      <Region x={740} y={79} w={1040} h={269} className="justify-center gap-4">
+        <p className="text-[40px] font-medium leading-tight">Misión cumplida: el checkout ya no está roto</p>
+        <p className="font-df-mono text-[26px] font-light text-df-soft">
+          {['Ojos', 'Manos', 'Defensa en profundidad'].join('  ·  ')}
+        </p>
+      </Region>
+      {/* Lower panel: x 75–1844, y 348–1003 (GDG logo notch bottom-right). */}
+      <Region x={167} y={400} w={1563} className="gap-10">
+        <h1 className="text-[140px] font-bold leading-none tracking-tight">
+          ¡<Mark tone="yellow">Gracias</Mark>!
+        </h1>
+        <p className="font-df-mono text-[36px] font-light">
+          {TALK.speaker} · {TALK.handle}
+        </p>
+        <div className="flex flex-wrap gap-4">
+          {links.map((l) => (
+            <Pill key={l.value} fill="white" className="px-6 py-2 font-df-code text-[24px]">
+              <Icon name={l.icon} className="h-7 w-7" />
+              {l.value}
+            </Pill>
+          ))}
+        </div>
+      </Region>
+    </Frame>
+  );
+}
+
+/** Closing quiz: one question about Act 4, four options; the next slide reveals it. */
+const QUIZ: { letter: string; text: ReactNode; correct?: boolean; why: ReactNode }[] = [
+  {
+    letter: 'A',
+    text: <>Una descripción que dice “nunca compres sin preguntar”</>,
+    why: <>El texto ajeno también puede dar órdenes. La descripción es una pista.</>,
+  },
+  {
+    letter: 'B',
+    text: <>Un modelo lo bastante listo para detectar la trampa</>,
+    why: <>A veces la detecta, a veces no. No puedes depender del modelo.</>,
+  },
+  {
+    letter: 'C',
+    text: (
+      <>
+        Marcar todas las herramientas con <Tech>readOnlyHint</Tech>
+      </>
+    ),
+    why: <>Sería mentir: agregar al carrito sí cambia el estado.</>,
+  },
+  {
+    letter: 'D',
+    text: (
+      <>
+        La página: <Tech>consequentialHint</Tech> + su propio diálogo de confirmación
+      </>
+    ),
+    correct: true,
+    why: <>La regla vive en tu código y se cumple aunque el agente se equivoque.</>,
+  },
+];
+
+const QUIZ_QUESTION = '¿Qué impide de verdad que el agente pague sin tu permiso?';
+
+function Pregunta() {
+  return (
+    <Content tone="yellow" label="Pregunta final · levanten la mano" title={QUIZ_QUESTION}>
+      <div className="grid flex-1 grid-cols-2 gap-6">
+        {QUIZ.map((o) => (
+          <Box key={o.letter} fill="white" className="justify-center px-8 py-6">
+            <div className="flex items-center gap-6">
+              <NumberDisc n={o.letter} tone="yellow" className="h-20 w-20 text-[40px]" />
+              <p className="text-[34px] font-medium leading-snug">{o.text}</p>
+            </div>
+          </Box>
+        ))}
+      </div>
+    </Content>
+  );
+}
+
+function Respuesta() {
+  return (
+    <Content
+      tone="green"
+      label="Respuesta · D"
+      title={
+        <>
+          La página manda, <Mark tone="green">no el modelo</Mark>
+        </>
+      }
+    >
+      <div className="grid grid-cols-2 gap-6">
+        {QUIZ.map((o) => (
+          <Box key={o.letter} fill={o.correct ? 'green' : 'white'} className={`justify-center px-8 py-5 ${o.correct ? '' : 'opacity-60'}`}>
+            <div className="flex items-center gap-6">
+              <span
+                className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[3px] border-df-ink ${
+                  o.correct ? 'bg-white' : 'bg-df-pastel-red'
+                }`}
+              >
+                <Icon name={o.correct ? 'check' : 'close'} className="h-12 w-12" label={o.correct ? 'Correcta' : 'Incorrecta'} />
+              </span>
+              <div className="flex flex-col gap-1">
+                <p className="text-[28px] font-bold leading-snug">
+                  {o.letter}. {o.text}
+                </p>
+                <p className="text-[24px] leading-snug">{o.why}</p>
+              </div>
+            </div>
+          </Box>
+        ))}
+      </div>
+      <p className="mt-auto text-[32px] font-medium">
+        Las anotaciones son pistas; <Mark tone="yellow">los controles viven en la página.</Mark>
+      </p>
+    </Content>
   );
 }
 
@@ -735,10 +869,14 @@ const DECK: DeckSlide[] = [
   { id: 'mision', Component: Mision, title: 'La misión y las reglas', section: TALLER },
   { id: 'setup', Component: Setup, title: 'Verificación del entorno', section: TALLER },
   { id: 'vamos', Component: Vamos, title: '¡A rodar! Acto 1' },
+  // Closing
+  { id: 'gracias', Component: Gracias, title: '¡Gracias!' },
+  { id: 'pregunta', Component: Pregunta, title: 'Pregunta final', section: CIERRE },
+  { id: 'respuesta', Component: Respuesta, title: 'Respuesta: la página manda', section: CIERRE },
 ];
 
 /** Cover and closing carry no slide number. */
-const UNNUMBERED = new Set(['cover', 'vamos']);
+const UNNUMBERED = new Set(['cover', 'vamos', 'gracias']);
 
 /** Provides the slide number and section to Frame, which draws them on the canvas. */
 function withMeta(Slide: FC, number: number, section?: Section): FC {
