@@ -29,7 +29,7 @@ Regla de oro: **cada acto termina a tiempo**. Quien no terminó, salta al tag si
 
 - [ ] Chrome actualizado; probar con y sin `chrome://flags/#enable-webmcp-testing`.
 - [ ] En tu equipo: `git switch final && npm ci && npm run typecheck && npm test && npm run build`.
-- [ ] Ensayar los 5 prompts del panel en **modo simulado** y con **Gemini**.
+- [ ] Ensayar los 5 prompts del panel en **modo simulado** y con **Gemini**. El Acto 1 va en modo simulado: con `.env` vacío, el prompt de la slide responde exactamente "No puedo agregar productos ni aplicar cupones. Hazlo en la web."
 - [ ] Clonar el repo en una segunda carpeta en `acto-1` para la demo en vivo.
 - [ ] Hotspot móvil cargado como plan B de red.
 - [ ] Completar guía, repo, proxy y Wi-Fi en `slides/src/talk.ts` y ensayar las slides con la vista del orador (ver "Slides de apertura").
@@ -225,17 +225,17 @@ La clave por cliente debe ser **tu IP pública** en las dos llamadas. Si ves la 
 | Min | Qué hacer | Qué decir (ideas clave) |
 | --- | --- | --- |
 | 0–9 | [Slides de apertura](#slides-de-apertura) (15 slides, guion en las notas) | El ticket, "el modelo no falla: no ve la página", por qué cuesta que un asistente actúe, WebMCP y por qué usarlo, `registerTool` + `AbortSignal`, arquitectura, misión y reglas. |
-| 9–10 | Botón **"Acto 3 · Prompt jefe"** (sí, el del Acto 3) | Señala que es honesto pero inútil: no puede buscar, agregar ni aplicar el cupón, y le dice al cliente que lo haga él en la web donde ya está. El carrito sigue vacío. "En el Acto 3, este mismo prompt se ejecuta solo." Si tu modelo inventa productos o dice que ya los agregó, mejor aún: tampoco ve ni toca la página. |
+| 9–10 | En **Modo simulado** (`.env` vacío), escribe el prompt de la slide: "Agrega un casco ECE y guantes talla M, y aplica el cupón." | Responde lo mismo que la slide: "No puedo agregar productos ni aplicar cupones. Hazlo en la web." Señala la insignia "0 herramientas WebMCP" y el carrito en 0. "En el Acto 3, este mismo pedido se ejecuta solo." Recuerda a quien clonó antes: `git fetch origin --tags --force`. |
 | 10–14 | Asistentes escriben `useWebMcpTools` + `get_store_info` | Explica StrictMode: montar → limpiar → montar. Quien termine antes: experimento `say_hello` en consola. |
 | 14–15 | Botón **"Acto 1 · Horario"** | Muestra el brillo en la píldora y la tarjeta de la herramienta. |
 
-**Prompt de demo (exacto, el mismo del Acto 3):**
+**Prompt de demo (exacto, el de la slide del incidente):**
 
 ```text
-Busca un casco certificado por menos de 1.200.000 COP, agrégalo en talla M junto con unos guantes de pista talla M, aplica el cupón de bienvenida y abre el carrito.
+Agrega un casco ECE y guantes talla M, y aplica el cupón.
 ```
 
-Con Gemini observamos (3 de 3 veces): "En este momento no dispongo de las herramientas necesarias para consultar el catálogo de la tienda, verificar la disponibilidad de productos ni gestionar el carrito de compras… Por favor, realiza la búsqueda y la compra directamente a través de la página web de Rodada."
+En Modo simulado la respuesta es fija y coincide con la slide: "No puedo agregar productos ni aplicar cupones. Hazlo en la web." El botón "Acto 3 · Prompt jefe" da la misma respuesta. El Acto 1 se hace en modo simulado a propósito; el modelo real (clave propia o tu proxy) se conecta al inicio del Acto 2 (`docs/02-acto-2-ojos.md`, paso 0). Con Gemini la redacción varía y es más larga.
 
 Comprobación opcional con **"Acto 1-2 · Cascos ECE"**: también responde que no tiene acceso al catálogo. La verdad, para contrastar en el Acto 2: solo el Altamira GT-R a 980.000.
 

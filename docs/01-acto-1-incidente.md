@@ -12,7 +12,7 @@
 
 Lunes, 8:12 a. m. Llega un ticket de soporte:
 
-> "Le pedí al asistente que me armara el kit: un casco certificado, guantes de pista en talla M y el cupón de bienvenida. Me respondió que **lo hiciera yo directamente en la página web**. ¡Estaba en la página web! Al final no compré nada."
+> "Le pedí al asistente: *«Agrega un casco ECE y guantes talla M, y aplica el cupón.»* Me respondió: *«No puedo agregar productos ni aplicar cupones. Hazlo en la web.»* ¡Estaba en la web! Al final no compré nada."
 
 El asistente funciona: el modelo responde rápido y es honesto. El problema es otro: **no ve ni toca la página**. No sabe qué hay en el catálogo, qué tallas quedan ni cómo agregar algo al carrito. Así que le devuelve el trabajo al cliente ("hazlo tú en la web"), y el cliente abandona el carrito. Es **un asistente honesto pero inútil**.
 
@@ -20,23 +20,36 @@ El arco del taller: en el Acto 1 el mismo pedido termina en "hazlo tú"; en el A
 
 ## 1. Reproduce el incidente (1 min)
 
+**Antes de empezar** (si clonaste el repo antes del 28 de noviembre), trae los tags actualizados:
+
+```bash
+git fetch origin --tags --force
+git switch -c mi-taller-v2 acto-1   # si ya tenías mi-taller sin cambios propios
+```
+
+Tu `.env` debe estar **vacío** (o con `AGENT_MODE=mock`): el Acto 1 se hace en "Modo simulado" a propósito. El modelo real se conecta en el Acto 2.
+
 ```bash
 npm run dev
 ```
 
-**Cómo funciona:** levanta la tienda (Vite, puerto 5173) y el proxy del agente (puerto 8787) en una sola terminal. El panel del asistente le habla al proxy por `/api`, y el proxy le habla al modelo.
+**Cómo funciona:** levanta la tienda (Vite, puerto 5173) y el proxy del agente (puerto 8787) en una sola terminal. El panel del asistente le habla al proxy por `/api`, y el proxy le responde con el agente simulado.
 
-1. Abre [http://localhost:5173](http://localhost:5173).
+1. Abre [http://localhost:5173](http://localhost:5173). El panel dice **"Modo simulado"**.
 2. En el panel **Asistente Rodada**, haz clic en "0 herramientas WebMCP": la lista está vacía.
-3. Envía el pedido del cliente con el botón "Acto 3 · Prompt jefe". Sí, es el botón del Acto 3: es exactamente lo que vas a lograr que ejecute.
+3. Escribe el pedido del cliente, el mismo de la slide:
 
 ```text
-Busca un casco certificado por menos de 1.200.000 COP, agrégalo en talla M junto con unos guantes de pista talla M, aplica el cupón de bienvenida y abre el carrito.
+Agrega un casco ECE y guantes talla M, y aplica el cupón.
 ```
 
-**Qué ejercita:** un pedido de varios pasos (buscar, filtrar por precio y talla, agregar dos productos, aplicar cupón, abrir el carrito). Sin herramientas, fíjate en que el asistente no puede hacer ninguno.
+**Qué ejercita:** un pedido de varios pasos (buscar, filtrar, agregar dos productos, aplicar el cupón). Sin herramientas, el asistente no puede hacer ninguno.
 
-**Esperado:** una respuesta amable que no hace nada. Con Gemini observamos algo como: "En este momento no dispongo de las herramientas necesarias para consultar el catálogo de la tienda, verificar la disponibilidad de productos ni gestionar el carrito de compras… Por favor, realiza la búsqueda y la compra directamente a través de la página web de Rodada". El cliente ya está en la página y el asistente le dice que lo haga a mano. El carrito sigue vacío.
+**Esperado**, igual que en la slide:
+
+> No puedo agregar productos ni aplicar cupones. Hazlo en la web.
+
+El cliente ya está en la web y el asistente le dice que lo haga a mano. El carrito sigue en 0. (El botón "Acto 3 · Prompt jefe" da la misma respuesta: es la versión larga de este pedido, la que el agente va a ejecutar solo en el Acto 3.)
 
 **Comprobación opcional:** envía también la pregunta del catálogo (botón "Acto 1-2 · Cascos ECE"):
 
@@ -46,9 +59,9 @@ Busca un casco certificado por menos de 1.200.000 COP, agrégalo en talla M junt
 
 **Qué ejercita:** una pregunta de solo lectura con cuatro filtros (categoría, certificación, talla con stock y precio). Fíjate en si el asistente admite que no ve el catálogo o si inventa productos.
 
-Responde lo mismo: no tiene acceso al catálogo. La respuesta correcta es solo **Casco integral Altamira GT-R, 980.000 COP**. (El Nimbo Sport cumple todo, salvo que la talla M está agotada.) Guárdala para compararla en el Acto 2.
+Responde lo mismo: "En este momento no tengo acceso al catálogo ni al inventario de la tienda…" La respuesta correcta es solo **Casco integral Altamira GT-R, 980.000 COP**. (El Nimbo Sport cumple todo, salvo que la talla M está agotada.) Guárdala para compararla en el Acto 2.
 
-> **Nota:** los modelos varían. Si el tuyo inventa productos o dice que ya agregó algo al carrito, el argumento es aún más fuerte. En ambos casos el punto es el mismo: el asistente no puede ver ni tocar la página.
+> **Nota:** con un modelo real (desde el Acto 2) la redacción varía y algunos modelos inventan productos. Por eso el Acto 1 usa el modo simulado: todos ven la misma respuesta que la slide. El punto es el mismo con cualquier modelo: el asistente no puede ver ni tocar la página.
 
 ## 2. El modelo mental (visto en las slides de apertura)
 

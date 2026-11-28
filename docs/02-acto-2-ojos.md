@@ -8,6 +8,22 @@
 
 ---
 
+## 0. Conecta el modelo real (2 min)
+
+Hasta aquí usaste el "Modo simulado". Ahora que el agente va a tener ojos, conéctalo a un modelo real. Abre `.env`, quita `AGENT_MODE=mock` si lo agregaste y elige **una** opción:
+
+```bash
+# A. Tu propia clave de Gemini (aistudio.google.com/apikey)
+GEMINI_API_KEY=tu-clave
+
+# B. El proxy del instructor (la URL con el token se comparte en el chat del taller)
+AGENT_BASE_URL=https://…/t/<token>
+```
+
+Reinicia `npm run dev` (`Ctrl+C` y otra vez `npm run dev`). La insignia del panel debe cambiar de "Modo simulado" a "Gemini · …".
+
+Sin red o sin clave, quédate en modo simulado: el taller funciona igual con los botones de sugerencias.
+
 ## Concepto (5 min)
 
 Cada vez que envías un mensaje, el panel ejecuta este ciclo **dentro del navegador**:

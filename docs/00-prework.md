@@ -29,7 +29,7 @@ npm ci                           # exact versions from package-lock.json
 - `git switch -c mi-taller acto-1` crea **tu propia rama** `mi-taller` a partir del tag `acto-1` (el punto de partida del taller) y te cambia a ella. Un tag es una foto fija: trabajar en tu rama evita perder cambios y te deja comparar con los tags de solución.
 - `npm ci` instala exactamente las versiones de `package-lock.json`, borrando antes `node_modules`. A diferencia de `npm install`, nunca actualiza el lockfile, así todos tienen las mismas dependencias.
 
-## 3. Configura el entorno (opcional pero recomendado)
+## 3. Crea tu `.env` (déjalo vacío por ahora)
 
 ```bash
 cp env.example .env
@@ -40,15 +40,19 @@ cp env.example .env
 - Copia la plantilla `env.example` (versionada, sin secretos) a `.env`, que es el archivo que leen el proxy (`server/`) y Vite. Así tu clave queda en un archivo local que Git ignora.
 - `GEMINI_API_KEY` activa un modelo real a través del proxy local; `AGENT_BASE_URL` hace que Vite reenvíe las llamadas a `/api` hacia el proxy del instructor (la URL incluye el token `/t/<token>`). Si dejas ambas vacías, el proxy usa el agente simulado.
 
-Abre `.env`. Tienes tres opciones para el asistente:
+**Déjalo vacío para el Acto 1.** Sin clave ni proxy, el asistente arranca en **"Modo simulado"**, y así es como debe empezar el taller: en el Acto 1 vas a reproducir el incidente de las slides y el modo simulado responde exactamente lo mismo que ellas. El modelo real se conecta al inicio del Acto 2.
+
+Si ya pusiste una clave, no la borres: agrega `AGENT_MODE=mock` en `.env` para el Acto 1 y quítalo en el Acto 2.
+
+Desde el Acto 2 tendrás tres opciones para el asistente:
 
 | Opción | Qué hacer | Resultado |
 | --- | --- | --- |
 | **A. Tu clave de Gemini** | Crea una clave gratuita en [aistudio.google.com/apikey](https://aistudio.google.com/apikey) y pégala en `GEMINI_API_KEY=` | Un modelo real responde |
-| **B. Proxy del instructor** | El día del taller te daremos una URL para `AGENT_BASE_URL=` | Un modelo real, sin clave propia |
+| **B. Proxy del instructor** | En el Acto 2 te daremos una URL para `AGENT_BASE_URL=` | Un modelo real, sin clave propia |
 | **C. Nada** | Deja todo vacío | "Modo simulado": funciona sin internet |
 
-Las tres opciones sirven para completar el taller.
+Las tres opciones sirven para completar el taller. Si quieres usar la A, crea la clave antes del evento (la red del lugar puede fallar) y guárdala; la pegas en el Acto 2.
 
 > Nunca subas tu `.env` a Git. Ya está en `.gitignore`.
 
@@ -89,7 +93,7 @@ npm run dev
 - Arranca dos procesos a la vez con `concurrently`: `web` (Vite, la tienda en `http://localhost:5173`) y `proxy` (el servidor de `server/` en `http://localhost:8787`, que habla con Gemini o con el agente simulado).
 - Vite reenvía las peticiones a `/api` hacia el proxy, así la clave nunca llega al navegador. Ambos procesos se recargan solos al guardar; `Ctrl+C` detiene los dos.
 
-Abre [http://localhost:5173](http://localhost:5173). Debes ver la tienda Rodada y, a la derecha, el panel **Asistente Rodada** con la insignia "Modo simulado" o "Gemini · …". Con la app encendida, vuelve a correr `npm run check` en otra terminal: el aviso del proxy debe desaparecer.
+Abre [http://localhost:5173](http://localhost:5173). Debes ver la tienda Rodada y, a la derecha, el panel **Asistente Rodada** con la insignia **"Modo simulado"** (con el `.env` vacío del paso 3). Con la app encendida, vuelve a correr `npm run check` en otra terminal: el aviso del proxy debe desaparecer.
 
 ## 6. (Opcional) WebMCP nativo en Chrome
 
@@ -112,7 +116,8 @@ Si algo falla con la flag activada (por ejemplo, el chat responde `400 Formato i
 - [ ] `npm ci` terminó sin errores
 - [ ] `npm run check` termina con "Todo listo"
 - [ ] `npm run dev` abre la tienda en `localhost:5173`
-- [ ] (Opcional) Tengo `GEMINI_API_KEY` en `.env`
+- [ ] El panel dice "Modo simulado" (`.env` vacío para el Acto 1)
+- [ ] (Opcional) Tengo una clave de Gemini guardada para el Acto 2
 - [ ] Traigo cargador
 
 ¿Problemas? Escribe al canal del taller con la salida de `npm run check`.

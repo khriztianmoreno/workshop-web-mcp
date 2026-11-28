@@ -200,10 +200,8 @@ function boss(turn: Turn): ChatResponse {
   const required = ['search_products', 'add_to_cart', 'apply_coupon', 'open_cart'];
   if (!hasTools(turn, ...required)) {
     if (!turn.tools.has('search_products')) {
-      // Act 1 incident, mirroring what Gemini does with zero tools: honest, and it hands the work back.
-      return say(
-        'En este momento no tengo las herramientas necesarias para consultar el catálogo ni gestionar el carrito de compras, así que no puedo buscar el casco, agregar los guantes ni aplicar el cupón de bienvenida. Por favor, realiza la búsqueda y la compra directamente en la página web de Rodada.',
-      );
+      // Act 1 incident, word for word as on the "incidente" slide: honest, and it hands the work back.
+      return say('No puedo agregar productos ni aplicar cupones. Hazlo en la web.');
     }
     const missing = required.filter((name) => !turn.tools.has(name));
     return say(`Puedo buscar productos, pero esta página no me da herramientas para: ${missing.join(', ')}. No puedo modificar tu carrito.`);

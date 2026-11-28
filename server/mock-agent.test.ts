@@ -94,9 +94,13 @@ describe('mock agent', () => {
   it('hands the boss prompt back to the customer without tools (Act 1 incident)', () => {
     const { text, calls } = converse(DEMO_PROMPTS.boss, [], () => ({}));
     expect(calls).toEqual([]);
-    expect(text).toContain('no puedo buscar el casco');
-    expect(text).toContain('directamente en la página web');
-    expect(text).not.toContain('BIENVENIDA10');
+    expect(text).toBe('No puedo agregar productos ni aplicar cupones. Hazlo en la web.');
+  });
+
+  it('hands the slide prompt back the same way (Act 1 incident slide)', () => {
+    const { text, calls } = converse('Agrega un casco ECE y guantes talla M, y aplica el cupón.', [], () => ({}));
+    expect(calls).toEqual([]);
+    expect(text).toBe('No puedo agregar productos ni aplicar cupones. Hazlo en la web.');
   });
 
   it('answers the catalog question with search_products', () => {
